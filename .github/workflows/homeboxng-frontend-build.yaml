@@ -1,0 +1,160 @@
+name: HomeBoxNG Frontend Build
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [dev/homeboxng-init]
+    paths:
+      - "frontend/**"
+  pull_request:
+    branches: [dev/homeboxng-init, main]
+    paths:
+      - "frontend/**"
+  workflow_dispatch:
+
+concurrency:
+  group: frontend-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: "Frontend Build"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Build (Nuxt generate)
+        working-directory: frontend
+        run: pnpm run build
+
+      - name: Build summary
+        run: |
+          echo "## Frontend Build" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          if [ -d frontend/.output ]; then
+            echo "Build output generated successfully." >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            du -sh frontend/.output/ >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::No .output directory found after build"
+          fi
+
+  lint:
+    name: "Frontend Lint"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        working-directory: frontend
+        run: pnpm run lint
+
+  typecheck:
+    name: "Frontend Typecheck"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        working-directory: frontend
+        run: pnpm run typecheck
+
+  page-check:
+    name: "Plugin Pages Verification"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify plugin pages exist
+        run: |
+          PAGES_DIR="frontend/pages/plugins"
+          MISSING=0
+
+          echo "## Plugin Page Verification" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          # Expected plugin pages
+          EXPECTED_PAGES=(
+            "index.vue"
+            "catalog.vue"
+          )
+
+          echo "| Page | Status |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|------|--------|" >> "$GITHUB_STEP_SUMMARY"
+
+          for page in "${EXPECTED_PAGES[@]}"; do
+            if [ -f "$PAGES_DIR/$page" ]; then
+              echo "| \`$page\` | Found |" >> "$GITHUB_STEP_SUMMARY"
+              echo "FOUND: $PAGES_DIR/$page"
+            else
+              echo "| \`$page\` | MISSING |" >> "$GITHUB_STEP_SUMMARY"
+              echo "::error::Missing expected plugin page: $PAGES_DIR/$page"
+              MISSING=$((MISSING + 1))
+            fi
+          done
+
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          # List all .vue files in the plugins directory
+          echo "### All Plugin Pages Found" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          if [ -d "$PAGES_DIR" ]; then
+            find "$PAGES_DIR" -name "*.vue" -type f | sort >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Plugin pages directory does not exist: $PAGES_DIR" >> "$GITHUB_STEP_SUMMARY"
+            echo "::error::Plugin pages directory does not exist: $PAGES_DIR"
+            MISSING=$((MISSING + 1))
+          fi
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$MISSING" -gt 0 ]; then
+            echo "::error::$MISSING expected plugin page(s) missing"
+            exit 1
+          fi
+
+          echo "All expected plugin pages verified."

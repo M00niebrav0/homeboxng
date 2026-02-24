@@ -1,0 +1,125 @@
+name: HomeBoxNG Plugin Tests
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [dev/homeboxng-init, main]
+    paths:
+      - "backend/internal/core/plugins/**"
+  pull_request:
+    branches: [dev/homeboxng-init, main]
+    paths:
+      - "backend/internal/core/plugins/**"
+  workflow_dispatch:
+
+concurrency:
+  group: plugin-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit-tests:
+    name: "Plugin Unit Tests"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+          cache-dependency-path: backend/go.mod
+
+      - name: Run plugin unit tests
+        working-directory: backend
+        run: go test -v -race -count=1 ./internal/core/plugins/...
+
+      - name: Test summary
+        if: always()
+        run: |
+          echo "## Plugin Unit Test Results" >> "$GITHUB_STEP_SUMMARY"
+          echo "Ran all tests under \`internal/core/plugins/\`" >> "$GITHUB_STEP_SUMMARY"
+
+  coverage:
+    name: "Plugin Coverage"
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+          cache-dependency-path: backend/go.mod
+
+      - name: Run tests with coverage
+        working-directory: backend
+        run: |
+          go test -v -race -count=1 \
+            -coverprofile=plugin-coverage.out \
+            -covermode=atomic \
+            ./internal/core/plugins/...
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: plugin-coverage
+          path: backend/plugin-coverage.out
+          retention-days: 14
+
+  summary:
+    name: "Coverage Summary"
+    runs-on: ubuntu-latest
+    needs: coverage
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+          cache-dependency-path: backend/go.mod
+
+      - name: Download coverage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: plugin-coverage
+          path: backend/
+
+      - name: Generate coverage summary
+        working-directory: backend
+        run: |
+          echo "## Plugin Coverage Report" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ ! -f plugin-coverage.out ]; then
+            echo "No coverage data found." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          echo "| Package | Coverage |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---------|----------|" >> "$GITHUB_STEP_SUMMARY"
+
+          go tool cover -func=plugin-coverage.out | while IFS= read -r line; do
+            # Parse lines like: github.com/.../plugins/registry.go:42:  Register  100.0%
+            if echo "$line" | grep -q "^total:"; then
+              TOTAL_COV=$(echo "$line" | awk '{print $NF}')
+            elif echo "$line" | grep -q "internal/core/plugins"; then
+              PKG=$(echo "$line" | awk '{print $1}' | sed 's|.*/internal/core/plugins/|plugins/|' | sed 's|:[0-9]*:||')
+              COV=$(echo "$line" | awk '{print $NF}')
+              echo "| \`$PKG\` | $COV |" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done
+
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          # Total coverage line
+          TOTAL=$(go tool cover -func=plugin-coverage.out | grep "^total:" | awk '{print $NF}')
+          echo "**Total plugin coverage: ${TOTAL}**" >> "$GITHUB_STEP_SUMMARY"
+
+          # Also output to logs
+          echo "=== Plugin Coverage ==="
+          go tool cover -func=plugin-coverage.out

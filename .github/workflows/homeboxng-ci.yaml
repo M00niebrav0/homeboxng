@@ -15,6 +15,10 @@ on:
     branches: [main, dev/homeboxng-init]
   workflow_dispatch:
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   backend-build:
     name: "Backend Build & Vet"
@@ -73,6 +77,29 @@ jobs:
           name: coverage-report
           path: backend/coverage.out
           retention-days: 7
+
+  plugin-tests:
+    name: "Plugin Unit Tests"
+    runs-on: ubuntu-latest
+    needs: backend-build
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+          cache-dependency-path: backend/go.mod
+
+      - name: Run plugin tests
+        working-directory: backend
+        run: go test -v -race ./internal/core/plugins/... -count=1
+
+      - name: Plugin test summary
+        if: always()
+        run: |
+          echo "## Plugin Test Results" >> "$GITHUB_STEP_SUMMARY"
+          echo "Ran all tests under \`internal/core/plugins/\`" >> "$GITHUB_STEP_SUMMARY"
 
   plugin-check:
     name: "Plugin Architecture"
