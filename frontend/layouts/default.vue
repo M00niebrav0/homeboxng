@@ -238,6 +238,7 @@
   import MdiPlus from "~icons/mdi/plus";
   import MdiLogout from "~icons/mdi/logout";
   import MdiFileDocumentMultiple from "~icons/mdi/file-document-multiple";
+  import MdiPuzzle from "~icons/mdi/puzzle";
   import MdiChevronRight from "~icons/mdi/chevron-right";
 
   import {
@@ -419,6 +420,13 @@
       active: computed(() => route.path === "/maintenance"),
       name: computed(() => t("menu.maintenance")),
       to: "/maintenance",
+    },
+    {
+      icon: MdiPuzzle,
+      id: 7,
+      active: computed(() => route.path.startsWith("/plugins")),
+      name: computed(() => "Plugins"),
+      to: "/plugins",
     },
     {
       icon: MdiAccount,

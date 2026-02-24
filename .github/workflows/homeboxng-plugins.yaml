@@ -1,0 +1,84 @@
+name: HomeBoxNG Plugin Build
+
+permissions:
+  contents: read
+  actions: read
+
+on:
+  push:
+    branches: [main, dev/homeboxng-init]
+    paths:
+      - 'backend/internal/core/plugins/**'
+      - 'backend/app/api/plugins.go'
+  pull_request:
+    branches: [main, dev/homeboxng-init]
+    paths:
+      - 'backend/internal/core/plugins/**'
+      - 'backend/app/api/plugins.go'
+  workflow_dispatch:
+
+jobs:
+  build-plugins:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+          cache-dependency-path: backend/go.mod
+
+      - name: Build all plugins
+        working-directory: backend
+        run: go build ./internal/core/plugins/...
+
+      - name: Verify full binary compiles
+        working-directory: backend
+        run: go build -o /dev/null ./app/api
+
+      - name: Run go vet on plugins
+        working-directory: backend
+        run: go vet ./internal/core/plugins/...
+
+      - name: Run go vet on full backend
+        working-directory: backend
+        run: go vet ./...
+
+      - name: Count registered plugins
+        working-directory: backend
+        run: |
+          count=$(grep -c 'pluginRegistry.Register' app/api/plugins.go || true)
+          echo "Registered plugins: $count"
+          if [ "$count" -lt 12 ]; then
+            echo "ERROR: Expected at least 12 registered plugins, found $count"
+            exit 1
+          fi
+
+      - name: Verify notification plugins registered
+        working-directory: backend
+        run: |
+          platforms=$(grep -c 'RegisterPlatform' app/api/plugins.go || true)
+          echo "Notification platforms: $platforms"
+          if [ "$platforms" -lt 1 ]; then
+            echo "ERROR: Expected notification dispatcher registration"
+            exit 1
+          fi
+
+      - name: List plugin packages
+        working-directory: backend
+        run: |
+          echo "Built-in plugin packages:"
+          find internal/core/plugins/builtin -name "plugin.go" -exec dirname {} \; | sort
+          echo ""
+          count=$(find internal/core/plugins/builtin -name "plugin.go" | wc -l)
+          echo "Total: $count plugin packages"
+
+      - name: Verify plugin interfaces
+        working-directory: backend
+        run: |
+          echo "Core plugin framework files:"
+          ls -la internal/core/plugins/*.go
+          echo ""
+          echo "Plugin interface types:"
+          grep -c 'type.*interface' internal/core/plugins/plugin.go || true

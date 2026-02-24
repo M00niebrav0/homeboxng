@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/pressly/goose/v3"
+	"github.com/sysadminsmedia/homebox/backend/internal/core/plugins"
 	"github.com/sysadminsmedia/homebox/backend/internal/sys/analytics"
 
 	"github.com/hay-kot/httpkit/errchain"
@@ -180,6 +181,34 @@ func run(cfg *config.Config) error {
 	)
 
 	// =========================================================================
+	// Initialize Plugin System
+
+	pctx := plugins.PluginContext{
+		Config:   cfg,
+		DB:       c,
+		Repos:    app.repos,
+		Services: app.services,
+		Bus:      app.bus,
+		Logger:   log.With().Str("component", "plugins").Logger(),
+	}
+	app.pluginRegistry = plugins.NewRegistry(pctx)
+	app.pluginCatalog = plugins.NewPluginCatalog(log.With().Str("component", "plugin-catalog").Logger())
+	app.multiCatalog = plugins.NewMultiSourceCatalog(log.With().Str("component", "multi-catalog").Logger())
+	app.permissionManager = plugins.NewPermissionManager()
+	app.pluginLogs = plugins.NewPluginLogCollector(500) // Keep last 500 log entries per plugin
+
+	// Initialize notification dispatcher
+	app.notificationDispatcher = plugins.NewNotificationDispatcher()
+
+	// Register built-in plugins (includes notification plugins)
+	registerBuiltinPlugins(app)
+
+	// Subscribe all event-aware plugins to the event bus
+	app.pluginRegistry.SubscribeAll(app.bus)
+
+	log.Info().Int("count", len(app.pluginRegistry.List())).Msg("plugin system initialized")
+
+	// =========================================================================
 	// Start Server
 
 	logger := log.With().Caller().Logger()
@@ -239,6 +268,27 @@ func run(cfg *config.Config) error {
 
 	// Start Reoccurring Tasks
 	registerRecurringTasks(app, cfg, runner)
+
+	// Start all plugins
+	runner.AddFunc("plugins", func(ctx context.Context) error {
+		if err := app.pluginRegistry.StartAll(ctx); err != nil {
+			log.Error().Err(err).Msg("error starting plugins")
+		}
+
+		// Block until shutdown
+		<-ctx.Done()
+
+		// Stop all plugins on shutdown
+		app.pluginRegistry.StopAll(context.Background())
+		return nil
+	})
+
+	// Refresh plugin catalog periodically
+	runner.AddPlugin(NewTask("refresh-plugin-catalog", 6*time.Hour, func(ctx context.Context) {
+		if err := app.pluginCatalog.Refresh(ctx); err != nil {
+			log.Debug().Err(err).Msg("failed to refresh plugin catalog")
+		}
+	}))
 
 	// Send analytics if enabled at around midnight UTC
 	if cfg.Options.AllowAnalytics {

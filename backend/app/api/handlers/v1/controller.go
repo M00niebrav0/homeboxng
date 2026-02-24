@@ -11,6 +11,7 @@ import (
 	"github.com/hay-kot/httpkit/server"
 	"github.com/rs/zerolog/log"
 	"github.com/sysadminsmedia/homebox/backend/app/api/providers"
+	"github.com/sysadminsmedia/homebox/backend/internal/core/plugins"
 	"github.com/sysadminsmedia/homebox/backend/internal/core/services"
 	"github.com/sysadminsmedia/homebox/backend/internal/core/services/reporting/eventbus"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/repo"
@@ -65,6 +66,42 @@ func WithURL(url string) func(*V1Controller) {
 	}
 }
 
+func WithPluginRegistry(registry *plugins.Registry) func(*V1Controller) {
+	return func(ctrl *V1Controller) {
+		ctrl.pluginRegistry = registry
+	}
+}
+
+func WithPluginCatalog(catalog *plugins.PluginCatalog) func(*V1Controller) {
+	return func(ctrl *V1Controller) {
+		ctrl.pluginCatalog = catalog
+	}
+}
+
+func WithMultiCatalog(catalog *plugins.MultiSourceCatalog) func(*V1Controller) {
+	return func(ctrl *V1Controller) {
+		ctrl.multiCatalog = catalog
+	}
+}
+
+func WithPermissionManager(pm *plugins.PermissionManager) func(*V1Controller) {
+	return func(ctrl *V1Controller) {
+		ctrl.permissionManager = pm
+	}
+}
+
+func WithPluginLogs(logs *plugins.PluginLogCollector) func(*V1Controller) {
+	return func(ctrl *V1Controller) {
+		ctrl.pluginLogs = logs
+	}
+}
+
+func WithNotificationDispatcher(nd *plugins.NotificationDispatcher) func(*V1Controller) {
+	return func(ctrl *V1Controller) {
+		ctrl.notificationDispatcher = nd
+	}
+}
+
 type V1Controller struct {
 	cookieSecure      bool
 	repo              *repo.AllRepos
@@ -76,6 +113,12 @@ type V1Controller struct {
 	url               string
 	config            *config.Config
 	oidcProvider      *providers.OIDCProvider
+	pluginRegistry    *plugins.Registry
+	pluginCatalog     *plugins.PluginCatalog
+	multiCatalog      *plugins.MultiSourceCatalog
+	permissionManager *plugins.PermissionManager
+	pluginLogs             *plugins.PluginLogCollector
+	notificationDispatcher *plugins.NotificationDispatcher
 }
 
 type (
@@ -98,6 +141,8 @@ type (
 		AllowRegistration bool            `json:"allowRegistration"`
 		LabelPrinting     bool            `json:"labelPrinting"`
 		OIDC              OIDCStatus      `json:"oidc"`
+		PluginsEnabled    bool            `json:"pluginsEnabled"`
+		PluginCount       int             `json:"pluginCount"`
 	}
 
 	OIDCStatus struct {
@@ -147,9 +192,14 @@ func (ctrl *V1Controller) initOIDCProvider() {
 //	@Router		/v1/status [GET]
 func (ctrl *V1Controller) HandleBase(ready ReadyFunc, build Build) errchain.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) error {
+		pluginCount := 0
+		if ctrl.pluginRegistry != nil {
+			pluginCount = len(ctrl.pluginRegistry.List())
+		}
+
 		return server.JSON(w, http.StatusOK, APISummary{
 			Healthy:           ready(),
-			Title:             "Homebox",
+			Title:             "HomeBoxNG",
 			Message:           "Track, Manage, and Organize your Things",
 			Build:             build,
 			Latest:            ctrl.svc.BackgroundService.GetLatestVersion(),
@@ -162,6 +212,8 @@ func (ctrl *V1Controller) HandleBase(ready ReadyFunc, build Build) errchain.Hand
 				AutoRedirect: ctrl.config.OIDC.AutoRedirect,
 				AllowLocal:   ctrl.config.Options.AllowLocalLogin,
 			},
+			PluginsEnabled: ctrl.pluginRegistry != nil,
+			PluginCount:    pluginCount,
 		})
 	}
 }

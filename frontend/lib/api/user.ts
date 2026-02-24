@@ -11,6 +11,7 @@ import { ReportsAPI } from "./classes/reports";
 import { NotifiersAPI } from "./classes/notifiers";
 import { MaintenanceAPI } from "./classes/maintenance";
 import { ProductAPI } from "./classes/product";
+import { PluginsAPI } from "./classes/plugins";
 import { TemplatesApi } from "./classes/templates";
 import type { Requests } from "~~/lib/requests";
 
@@ -27,6 +28,7 @@ export class UserClient extends BaseAPI {
   assets: AssetsApi;
   reports: ReportsAPI;
   notifiers: NotifiersAPI;
+  plugins: PluginsAPI;
   products: ProductAPI;
 
   constructor(requests: Requests, attachmentToken: string) {
@@ -44,6 +46,7 @@ export class UserClient extends BaseAPI {
     this.assets = new AssetsApi(requests);
     this.reports = new ReportsAPI(requests);
     this.notifiers = new NotifiersAPI(requests);
+    this.plugins = new PluginsAPI(requests);
     this.products = new ProductAPI(requests);
 
     Object.freeze(this);

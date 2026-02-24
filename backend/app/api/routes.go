@@ -57,6 +57,12 @@ func (a *app) mountRoutes(r *chi.Mux, chain *errchain.ErrChain, repos *repo.AllR
 		v1.WithRegistration(a.conf.Options.AllowRegistration),
 		v1.WithDemoStatus(a.conf.Demo), // Disable Password Change in Demo Mode
 		v1.WithURL(fmt.Sprintf("%s:%s", a.conf.Web.Host, a.conf.Web.Port)),
+		v1.WithPluginRegistry(a.pluginRegistry),
+		v1.WithPluginCatalog(a.pluginCatalog),
+		v1.WithMultiCatalog(a.multiCatalog),
+		v1.WithPermissionManager(a.permissionManager),
+		v1.WithPluginLogs(a.pluginLogs),
+		v1.WithNotificationDispatcher(a.notificationDispatcher),
 	)
 
 	r.Route(prefix+"/v1", func(r chi.Router) {
@@ -208,6 +214,40 @@ func (a *app) mountRoutes(r *chi.Mux, chain *errchain.ErrChain, repos *repo.AllR
 
 		// Reporting Services
 		r.Get("/reporting/bill-of-materials", chain.ToHandlerFunc(v1Ctrl.HandleBillOfMaterialsExport(), userMW...))
+
+		// Plugin Management
+		r.Get("/plugins", chain.ToHandlerFunc(v1Ctrl.HandlePluginsList(), userMW...))
+		r.Get("/plugins/catalog", chain.ToHandlerFunc(v1Ctrl.HandlePluginsCatalog(), userMW...))
+		r.Post("/plugins/catalog/refresh", chain.ToHandlerFunc(v1Ctrl.HandlePluginsCatalogRefresh(), userMW...))
+		r.Post("/plugins/register", chain.ToHandlerFunc(v1Ctrl.HandlePluginRegisterExternal(), userMW...))
+		r.Get("/plugins/permissions", chain.ToHandlerFunc(v1Ctrl.HandleAllPermissions(), userMW...))
+		r.Get("/plugins/sources", chain.ToHandlerFunc(v1Ctrl.HandlePluginSources(), userMW...))
+		r.Post("/plugins/sources", chain.ToHandlerFunc(v1Ctrl.HandlePluginSourceAdd(), userMW...))
+		r.Delete("/plugins/sources", chain.ToHandlerFunc(v1Ctrl.HandlePluginSourceRemove(), userMW...))
+		r.Get("/plugins/{name}/config", chain.ToHandlerFunc(v1Ctrl.HandlePluginConfig(), userMW...))
+		r.Put("/plugins/{name}/config", chain.ToHandlerFunc(v1Ctrl.HandlePluginConfigUpdate(), userMW...))
+		r.Get("/plugins/{name}/permissions", chain.ToHandlerFunc(v1Ctrl.HandlePluginPermissions(), userMW...))
+		r.Post("/plugins/{name}/permissions/grant", chain.ToHandlerFunc(v1Ctrl.HandlePluginGrantPermission(), userMW...))
+		r.Post("/plugins/{name}/permissions/revoke", chain.ToHandlerFunc(v1Ctrl.HandlePluginRevokePermission(), userMW...))
+		r.Post("/plugins/{name}/permissions/grant-all", chain.ToHandlerFunc(v1Ctrl.HandlePluginGrantAll(), userMW...))
+		r.Post("/plugins/{name}/enable", chain.ToHandlerFunc(v1Ctrl.HandlePluginEnable(), userMW...))
+		r.Post("/plugins/{name}/disable", chain.ToHandlerFunc(v1Ctrl.HandlePluginDisable(), userMW...))
+		r.Post("/plugins/{name}/reset", chain.ToHandlerFunc(v1Ctrl.HandlePluginReset(), userMW...))
+		r.Delete("/plugins/{name}", chain.ToHandlerFunc(v1Ctrl.HandlePluginDelete(), userMW...))
+		r.Get("/plugins/{name}/logs", chain.ToHandlerFunc(v1Ctrl.HandlePluginLogs(), userMW...))
+
+		// Notification Management
+		r.Get("/notifications/platforms", chain.ToHandlerFunc(v1Ctrl.HandleNotificationPlatforms(), userMW...))
+		r.Post("/notifications/send", chain.ToHandlerFunc(v1Ctrl.HandleNotificationSend(), userMW...))
+		r.Post("/notifications/test/{platform}", chain.ToHandlerFunc(v1Ctrl.HandleNotificationTest(), userMW...))
+		r.Get("/notifications/categories", chain.ToHandlerFunc(v1Ctrl.HandleNotificationCategories(), userMW...))
+		r.Get("/notifications/preferences", chain.ToHandlerFunc(v1Ctrl.HandleNotificationPreferences(), userMW...))
+		r.Put("/notifications/preferences", chain.ToHandlerFunc(v1Ctrl.HandleNotificationPreferenceUpdate(), userMW...))
+
+		// Plugin proxy routes - mount external plugin API routes
+		if a.pluginRegistry != nil {
+			a.pluginRegistry.MountRoutes(r)
+		}
 
 		r.NotFound(http.NotFound)
 	})

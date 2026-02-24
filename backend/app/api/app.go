@@ -3,6 +3,7 @@ package main
 import (
 	"time"
 
+	"github.com/sysadminsmedia/homebox/backend/internal/core/plugins"
 	"github.com/sysadminsmedia/homebox/backend/internal/core/services"
 	"github.com/sysadminsmedia/homebox/backend/internal/core/services/reporting/eventbus"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent"
@@ -20,6 +21,12 @@ type app struct {
 	bus                 *eventbus.EventBus
 	authLimiter         *authRateLimiter
 	notifierTestLimiter *simpleRateLimiter
+	pluginRegistry      *plugins.Registry
+	pluginCatalog       *plugins.PluginCatalog
+	multiCatalog        *plugins.MultiSourceCatalog
+	permissionManager   *plugins.PermissionManager
+	pluginLogs             *plugins.PluginLogCollector
+	notificationDispatcher *plugins.NotificationDispatcher
 }
 
 func new(conf *config.Config) *app {

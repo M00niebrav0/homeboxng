@@ -2,96 +2,186 @@
   <img src="/docs/src/assets/lilbox.svg" height="200"/>
 </div>
 
-<h1 align="center" style="margin-top: -10px;"> HomeBox </h1>
+<h1 align="center" style="margin-top: -10px;"> HomeBoxNG </h1>
+<p align="center"><em>HomeBox, supercharged.</em></p>
 <p align="center" style="width: 100%;">
-   <a href="https://homebox.software/en/">Docs</a>
+   <a href="#quick-start">Quick Start</a>
    |
-   <a href="https://demo.homebox.software">Demo</a>
+   <a href="#whats-new-in-homeboxng">What's New</a>
    |
-   <a href="https://discord.gg/aY4DCkpNA9">Discord</a>
+   <a href="#plugin-system">Plugins</a>
 </p>
 <p align="center" style="width: 100%;">
-    <img src="https://img.shields.io/github/check-runs/sysadminsmedia/homebox/main" alt="Github Checks"/>
-    <img src="https://img.shields.io/github/license/sysadminsmedia/homebox"/>
-    <img src="https://img.shields.io/github/v/release/sysadminsmedia/homebox?sort=semver&display_name=release"/>
-    <img src="https://img.shields.io/weblate/progress/homebox?server=https%3A%2F%2Ftranslate.sysadminsmedia.com"/>
-</p>
-<p align="center" style="width: 100%;">
-    <img src="https://img.shields.io/reddit/subreddit-subscribers/homebox"/>
-    <img src="https://img.shields.io/mastodon/follow/110749314839831923?domain=infosec.exchange"/>
-    <img src="https://img.shields.io/lemmy/homebox%40lemmy.world?label=lemmy"/>
-</p>
-<p align="center" style="width: 100%;">
-  <a href="https://www.pikapods.com/pods?run=homebox"><img src="https://www.pikapods.com/static/run-button.svg"/></a>
+    <img src="https://img.shields.io/github/license/M00niebrav0/homeboxng" alt="License"/>
+    <img src="https://img.shields.io/github/v/release/M00niebrav0/homeboxng?sort=semver&display_name=release" alt="Release"/>
 </p>
 
-## What is HomeBox
+## What is HomeBoxNG?
 
-HomeBox is the inventory and organization system built for the Home User! With a focus on simplicity and ease of use, Homebox is the perfect solution for your home inventory, organization, and management needs. While developing this project, We've tried to keep the following principles in mind:
+HomeBoxNG is a fork of [HomeBox](https://github.com/sysadminsmedia/homebox) that keeps everything you love about the original -- simple, fast, portable -- and adds power-user features for people who want to go deeper.
 
-- 🧘 _Simple but Expandable_ - Homebox is designed to be simple and easy to use. No complicated setup or configuration required. But expandable to whatever level of infrastructure you want to put into it.
-- 🚀 _Blazingly Fast_ - Homebox is written in Go, which makes it extremely fast and requires minimal resources to deploy. In general, idle memory usage is less than 50MB for the whole container.
-- 📦 _Portable_ - Homebox is designed to be portable and run on anywhere. We use SQLite and an embedded Web UI to make it easy to deploy, use, and backup.
+**Same foundation. Same principles. More capability.**
 
-### Key Features
-- 📇 Rich Organization - Organize your items into categories, locations, and tags. You can also create custom fields to store additional information about your items.
-- 🔍 Powerful Search - Quickly find items in your inventory using the powerful search feature.
-- 📸 Image Upload - Upload images of your items to make it easy to identify them.
-- 📄 Document and Warranty Tracking - Keep track of important documents and warranties for your items.
-- 💰 Purchase & Maintenance Tracking - Track purchase dates, prices, and maintenance schedules for your items.
-- 📱 Responsive Design - Homebox is designed to work on any device, including desktops, tablets, and smartphones.
+### HomeBox Core Principles (preserved)
 
-## Screenshots
-![Login Screen](.github/screenshots/1.png)
-![Dashboard](.github/screenshots/2.png)
-![Item View](.github/screenshots/3.png)
-![Create Item](.github/screenshots/9.png)
-![Search](.github/screenshots/8.png)
+- **Simple but Expandable** - No complicated setup. Works out of the box. Expand as needed.
+- **Blazingly Fast** - Written in Go. Under 50MB idle memory. Minimal resources.
+- **Portable** - SQLite + embedded web UI. Easy to deploy, use, and backup.
 
-You can also try the demo instances of Homebox:
-- [Demo](https://demo.homebox.software)
-- [Nightly](https://nightly.homebox.software)
+### HomeBox Core Features (preserved)
+
+- Rich Organization - Locations, tags, custom fields
+- Powerful Search - Full-text search across your inventory
+- Image Upload - Photo documentation for every item
+- Document & Warranty Tracking - Receipts, manuals, warranty dates
+- Purchase & Maintenance Tracking - Costs, schedules, service history
+- Responsive Design - Desktop, tablet, and mobile
+
+---
+
+## What's New in HomeBoxNG
+
+### AI-Powered Vision Pipeline
+Send photos of your items and AI identifies them automatically. Uses local LLMs (Ollama/Qwen3-VL) or cloud models (Gemini, GPT-4o). Multi-photo grouping with EXIF timestamp correlation.
+
+### Plugin System
+First-class plugin architecture. Extend HomeBoxNG with custom functionality without forking. Plugins can add API endpoints, event hooks, UI pages, and scheduled tasks. [Learn more](#plugin-system)
+
+### Deep Location Hierarchy
+Unlimited nesting depth. Server > Rack > Shelf > Drive Bay > Disk 1. Containers, drawers, jars, bins -- organize however your brain works. OneNote-style drill-down navigation.
+
+### Discord Bot Integration
+Full inventory management from Discord. Natural language queries, photo scanning, label printing, shopping lists. "Where is my drill?" just works.
+
+### Smart Label Printing
+Brother QL thermal labels with QR codes. Auto-presets by location type (Alex drawers get half-size, server racks get detailed). Scan any label to jump straight to that location.
+
+### Eye-Fi / WiFi SD Card Support
+Shoot photos on a DSLR with an Eye-Fi card, they upload to HomeBoxNG automatically. Full SOAP protocol implementation with auto-setup from USB card reader.
+
+### Item Lending & Checkout
+Track items lent to friends and family. Due dates, overdue alerts, automatic HomeBox notes. Never lose track of borrowed tools again.
+
+### Insurance Verification
+Value-tiered re-verification schedules. High-value items every 6 months, low-value every 2 years. Generates verification reports for insurance claims.
+
+### Multi-Property Tracking
+Home, cabin, storage unit, office. Track which property items are at. Move items between properties with one command.
+
+### Excel Import/Export
+Full inventory as formatted .xlsx with auto-sized columns, conditional formatting, and hyperlinks back to HomeBox.
+
+### Home Assistant Bridge
+MQTT-based real-time sync. HomeBox items become HA sensor entities. QR scan fires HA events for automations.
+
+### Paperless-ngx Integration
+Bi-directional document linking. Receipts in Paperless auto-link to matching HomeBox items.
+
+### Voice Control API
+"Alexa, ask HomeBox where is my drill?" Natural language query endpoint for any voice assistant.
+
+### NFC Tag Support
+Generate NDEF payloads for NTAG215 stickers. Tap your phone on any tagged location to open it instantly.
+
+### 3D Print Suggestions
+Search Makerworld and Thingiverse for organizers that fit your items and storage locations.
+
+### Shopping List & Reorder
+Low-stock alerts, per-store grouping, price estimates. Auto-add consumables when maintenance is due.
+
+### Analytics Dashboard
+Charts, stats, activity feeds. Item counts, value over time, category breakdown, storage utilization.
+
+---
+
+## Plugin System
+
+HomeBoxNG introduces a plugin architecture that lets you extend functionality without modifying core code.
+
+### What Plugins Can Do
+
+| Capability | Example |
+|-----------|---------|
+| **API Endpoints** | Add custom REST routes under `/api/plugins/{name}/` |
+| **Event Hooks** | React to item created/updated/deleted, location changes |
+| **Scheduled Tasks** | Run periodic jobs (backups, sync, alerts) |
+| **UI Pages** | Add pages to the web interface via plugin slots |
+| **Config Sections** | Register plugin-specific settings |
+
+### Plugin Lifecycle
+
+```
+Register -> Configure -> Enable -> [Hooks fire on events] -> Disable -> Unregister
+```
+
+### Built-in Plugins (ship with HomeBoxNG)
+
+| Plugin | Description |
+|--------|-------------|
+| `ai-vision` | Photo identification via local/cloud LLMs |
+| `discord-bot` | Full Discord bot integration |
+| `label-printer` | Brother QL thermal label printing |
+| `ha-bridge` | Home Assistant MQTT bridge |
+| `paperless` | Paperless-ngx document linking |
+| `eyefi` | Eye-Fi WiFi SD card receiver |
+
+### Third-Party Plugins
+
+Plugins are Go packages that implement the `Plugin` interface. Drop them in the plugins directory or register via the API.
+
+---
 
 ## Quick Start
 
-[Configuration & Docker Compose](https://homebox.software/en/quick-start/)
-
 ```bash
-# If using the rootless or hardened image, ensure data 
-# folder has correct permissions
 mkdir -p /path/to/data/folder
-chown 65532:65532 -R /path/to/data/folder
 docker run -d \
-  --name homebox \
+  --name homeboxng \
   --restart unless-stopped \
   --publish 3100:7745 \
-  --env TZ=Europe/Bucharest \
+  --env TZ=America/New_York \
   --volume /path/to/data/folder/:/data \
-  ghcr.io/sysadminsmedia/homebox:latest
-# ghcr.io/sysadminsmedia/homebox:latest-rootless
-# ghcr.io/sysadminsmedia/homebox:latest-hardened
+  ghcr.io/m00niebrav0/homeboxng:latest
 ```
 
-<!-- CONTRIBUTING -->
+### Upgrading from HomeBox
 
-## Contributing
+HomeBoxNG is a drop-in replacement. Point it at your existing HomeBox data volume and it just works. All existing data, locations, items, and attachments are preserved.
 
-Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+```bash
+# Stop HomeBox
+docker stop homebox
 
-To get started with code based contributions, please see our [contributing guide](https://homebox.software/en/contribute/).
+# Start HomeBoxNG with the same data volume
+docker run -d \
+  --name homeboxng \
+  --restart unless-stopped \
+  --publish 3100:7745 \
+  --volume /path/to/existing-homebox-data/:/data \
+  ghcr.io/m00niebrav0/homeboxng:latest
+```
 
-If you are not a coder and can't help translate, you can still contribute financially. Financial contributions help us maintain the project and keep demos running.
+---
 
-## Help us Translate
-We want to make sure that Homebox is available in as many languages as possible. If you are interested in helping us translate Homebox, please help us via our [Weblate instance](https://translate.sysadminsmedia.com/projects/homebox/).
+## Syncing with Upstream HomeBox
 
-[![Translation status](https://translate.sysadminsmedia.com/widget/homebox/multi-auto.svg)](https://translate.sysadminsmedia.com/engage/homebox/)
+HomeBoxNG regularly merges updates from [sysadminsmedia/homebox](https://github.com/sysadminsmedia/homebox) to stay current with bug fixes and improvements.
+
+```bash
+git remote add upstream https://github.com/sysadminsmedia/homebox.git
+git fetch upstream
+git merge upstream/main
+```
+
+---
 
 ## Credits
-- Original project by [@hay-kot](https://github.com/hay-kot)
-- Logo by [@lakotelman](https://github.com/lakotelman)
 
-### Contributors
-<a href="https://github.com/sysadminsmedia/homebox/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=sysadminsmedia/homebox" />
-</a>
+- **Original HomeBox** by [@hay-kot](https://github.com/hay-kot)
+- **HomeBox continuation** by [sysadminsmedia](https://github.com/sysadminsmedia/homebox)
+- **HomeBox logo** by [@lakotelman](https://github.com/lakotelman)
+- **HomeBoxNG** by [@M00niebrav0](https://github.com/M00niebrav0)
+
+## License
+
+AGPL-3.0 -- same as HomeBox. See [LICENSE](LICENSE) for details.
