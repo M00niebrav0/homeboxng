@@ -264,10 +264,10 @@ func TestMultiSourceCatalog_SearchAll(t *testing.T) {
 		want  int
 	}{
 		{"", 3},           // empty query returns all
-		{"ai", 2},         // matches ai-vision name + category
+		{"ai", 1},         // matches ai-vision by name (also category but same plugin)
 		{"printer", 1},    // matches label-printer name
 		{"brother", 1},    // matches description
-		{"backup", 2},     // matches both name and category
+		{"backup", 1},     // matches backup-sync by name (also category but same plugin)
 		{"hardware", 1},   // matches category
 		{"nonexistent", 0},
 	}
@@ -333,8 +333,8 @@ func TestPluginCatalog_Search(t *testing.T) {
 		want  int
 	}{
 		{"", 3},
-		{"ai", 2}, // matches name and category
-		{"backup", 1},
+		{"ai", 1}, // matches ai-vision by name (also category but same plugin)
+		{"backup", 1}, // matches "backup" by name
 		{"VISION", 1}, // case insensitive
 		{"xyz", 0},
 	}
