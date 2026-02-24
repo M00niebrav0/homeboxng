@@ -240,6 +240,8 @@
   import MdiFileDocumentMultiple from "~icons/mdi/file-document-multiple";
   import MdiPuzzle from "~icons/mdi/puzzle";
   import MdiChevronRight from "~icons/mdi/chevron-right";
+  import MdiViewDashboard from "~icons/mdi/view-dashboard";
+  import MdiShieldLock from "~icons/mdi/shield-lock";
 
   import {
     Sidebar,
@@ -387,6 +389,13 @@
     }[];
   }[] = [
     {
+      icon: MdiViewDashboard,
+      active: computed(() => route.path === "/home/dashboard"),
+      id: 10,
+      name: computed(() => "Dashboard"),
+      to: "/home/dashboard",
+    },
+    {
       icon: MdiHome,
       active: computed(() => route.path === "/home"),
       id: 0,
@@ -469,6 +478,39 @@
           active: computed(() => route.path === "/plugins/catalog"),
           name: computed(() => "Catalog"),
           to: "/plugins/catalog",
+        },
+        {
+          id: 78,
+          active: computed(() => route.path === "/plugins/ha-bridge"),
+          name: computed(() => "HA Bridge"),
+          to: "/plugins/ha-bridge",
+        },
+        {
+          id: 79,
+          active: computed(() => route.path === "/plugins/manage"),
+          name: computed(() => "Manage"),
+          to: "/plugins/manage",
+        },
+      ],
+    },
+    {
+      icon: MdiShieldLock,
+      id: 8,
+      active: computed(() => route.path.startsWith("/settings")),
+      name: computed(() => "Settings"),
+      to: "/settings",
+      collapsible: [
+        {
+          id: 81,
+          active: computed(() => route.path === "/settings"),
+          name: computed(() => "General"),
+          to: "/settings",
+        },
+        {
+          id: 82,
+          active: computed(() => route.path === "/settings/security"),
+          name: computed(() => "Security"),
+          to: "/settings/security",
         },
       ],
     },

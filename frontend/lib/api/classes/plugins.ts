@@ -274,6 +274,163 @@ export interface RepairEntry {
   warrantyClaim: boolean;
 }
 
+// ========== Health & Monitoring Types ==========
+
+export interface HealthReport {
+  pluginName: string;
+  status: "healthy" | "degraded" | "unhealthy" | "unknown";
+  message: string;
+  lastCheck: string;
+  uptime: number;
+  checks: Record<string, { name: string; status: string; message: string; duration: number }>;
+}
+
+export interface HealthSummary {
+  totalPlugins: number;
+  healthy: number;
+  degraded: number;
+  unhealthy: number;
+  unknown: number;
+  reports: HealthReport[];
+}
+
+export interface PluginMetrics {
+  requestCount: number;
+  errorCount: number;
+  lastError: string;
+  lastErrorTime: string;
+  averageLatency: number;
+  p95Latency: number;
+  startTime: string;
+  uptime: number;
+}
+
+// ========== Webhook Types ==========
+
+export interface WebhookConfig {
+  id: string;
+  pluginName: string;
+  url: string;
+  secret: string;
+  events: string[];
+  active: boolean;
+  createdAt: string;
+  lastTriggered: string;
+  failureCount: number;
+  maxRetries: number;
+}
+
+// ========== Audit Types ==========
+
+export interface AuditEntry {
+  id: string;
+  timestamp: string;
+  pluginName: string;
+  action: string;
+  actor: string;
+  details: Record<string, string>;
+  severity: "info" | "warning" | "critical";
+}
+
+export interface AuditFilter {
+  pluginName?: string;
+  action?: string;
+  severity?: string;
+  since?: string;
+  limit?: number;
+}
+
+// ========== Dependency Types ==========
+
+export interface DependencyInfo {
+  name: string;
+  minVersion: string;
+  optional: boolean;
+  resolved: boolean;
+  availableVersion?: string;
+}
+
+// ========== Session & Token Types ==========
+
+export interface UserSession {
+  id: string;
+  device: string;
+  browser: string;
+  ip: string;
+  lastActive: string;
+  createdAt: string;
+  current: boolean;
+}
+
+export interface ApiToken {
+  id: string;
+  name: string;
+  scope: "read-only" | "read-write" | "admin";
+  createdAt: string;
+  lastUsed: string;
+  expiresAt: string;
+  requestCount24h?: number;
+  requestCount7d?: number;
+  requestCount30d?: number;
+}
+
+export interface ApiTokenCreated extends ApiToken {
+  token: string; // Only returned on creation
+}
+
+export interface LoginHistoryEntry {
+  id: string;
+  timestamp: string;
+  ip: string;
+  status: "success" | "failed";
+  device: string;
+  method: string;
+}
+
+export interface SecurityAlertPreferences {
+  notifyNewLogin: boolean;
+  notifyPermissionChanges: boolean;
+  notifyFailedLogins: boolean;
+  failedLoginThreshold: number;
+  alertEmail: string;
+}
+
+// ========== HA Bridge Types ==========
+
+export interface HABridgeStatus {
+  connected: boolean;
+  lastSync: string;
+  entitiesSynced: number;
+  automationsCount: number;
+}
+
+export interface HAEntityMapping {
+  id: string;
+  entityId: string;
+  entityName: string;
+  itemId: string;
+  itemName: string;
+  linkType: string;
+  syncStatus: "synced" | "pending" | "error";
+  lastSynced: string;
+}
+
+export interface HAAutomation {
+  id: string;
+  name: string;
+  trigger: string;
+  action: string;
+  enabled: boolean;
+}
+
+export interface HADiscoveredEntity {
+  entityId: string;
+  name: string;
+  domain: string;
+  state: string;
+  mapped: boolean;
+}
+
 export class PluginsAPI extends BaseAPI {
   // ========== Plugin Management ==========
 
@@ -617,5 +774,159 @@ export class PluginsAPI extends BaseAPI {
       url: route("/plugins/maintenance-scheduler/repairs"),
       body: entry,
     });
+  }
+
+  // ========== Plugin Health & Monitoring ==========
+
+  getHealthSummary() {
+    return this.http.get<HealthSummary>({ url: route("/plugins/health") });
+  }
+
+  getPluginHealth(name: string) {
+    return this.http.get<HealthReport>({ url: route(`/plugins/${name}/health`) });
+  }
+
+  getPluginMetrics(name: string) {
+    return this.http.get<PluginMetrics>({ url: route(`/plugins/${name}/metrics`) });
+  }
+
+  getAllMetrics() {
+    return this.http.get<Record<string, PluginMetrics>>({ url: route("/plugins/metrics") });
+  }
+
+  // ========== Webhooks ==========
+
+  getWebhooks(pluginName: string) {
+    return this.http.get<WebhookConfig[]>({ url: route(`/plugins/${pluginName}/webhooks`) });
+  }
+
+  createWebhook(pluginName: string, webhook: Omit<WebhookConfig, "id" | "createdAt" | "lastTriggered" | "failureCount">) {
+    return this.http.post<typeof webhook, WebhookConfig>({
+      url: route(`/plugins/${pluginName}/webhooks`),
+      body: webhook,
+    });
+  }
+
+  deleteWebhook(pluginName: string, webhookId: string) {
+    return this.http.delete<void>({ url: route(`/plugins/${pluginName}/webhooks/${webhookId}`) });
+  }
+
+  // ========== Audit Trail ==========
+
+  getAuditLog(filter?: AuditFilter) {
+    const params = new URLSearchParams();
+    if (filter?.pluginName) params.set("plugin", filter.pluginName);
+    if (filter?.action) params.set("action", filter.action);
+    if (filter?.severity) params.set("severity", filter.severity);
+    if (filter?.limit) params.set("limit", String(filter.limit));
+    if (filter?.since) params.set("since", filter.since);
+    const qs = params.toString();
+    return this.http.get<AuditEntry[]>({ url: route(`/plugins/audit${qs ? `?${qs}` : ""}`) });
+  }
+
+  exportAuditLog(format: "json" | "csv" = "json") {
+    return this.http.get<string>({ url: route(`/plugins/audit/export?format=${format}`) });
+  }
+
+  // ========== Plugin Dependencies ==========
+
+  getPluginDependencies(name: string) {
+    return this.http.get<DependencyInfo[]>({ url: route(`/plugins/${name}/dependencies`) });
+  }
+
+  // ========== Session Management ==========
+
+  getActiveSessions() {
+    return this.http.get<UserSession[]>({ url: route("/users/self/sessions") });
+  }
+
+  revokeSession(sessionId: string) {
+    return this.http.delete<void>({ url: route(`/users/self/sessions/${sessionId}`) });
+  }
+
+  revokeAllOtherSessions() {
+    return this.http.post<void, void>({ url: route("/users/self/sessions/revoke-others") });
+  }
+
+  // ========== API Tokens ==========
+
+  getApiTokens() {
+    return this.http.get<ApiToken[]>({ url: route("/users/self/api-tokens") });
+  }
+
+  createApiToken(token: { name: string; expiresIn: string; scope: string }) {
+    return this.http.post<typeof token, ApiTokenCreated>({
+      url: route("/users/self/api-tokens"),
+      body: token,
+    });
+  }
+
+  revokeApiToken(tokenId: string) {
+    return this.http.delete<void>({ url: route(`/users/self/api-tokens/${tokenId}`) });
+  }
+
+  // ========== Login History ==========
+
+  getLoginHistory(page: number = 1, pageSize: number = 50, status?: string) {
+    const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+    if (status) params.set("status", status);
+    return this.http.get<LoginHistoryEntry[]>({ url: route(`/users/self/login-history?${params}`) });
+  }
+
+  // ========== Security Alerts ==========
+
+  getSecurityAlertPreferences() {
+    return this.http.get<SecurityAlertPreferences>({ url: route("/users/self/security-alerts") });
+  }
+
+  updateSecurityAlertPreferences(prefs: SecurityAlertPreferences) {
+    return this.http.put<SecurityAlertPreferences, void>({
+      url: route("/users/self/security-alerts"),
+      body: prefs,
+    });
+  }
+
+  // ========== HA Bridge ==========
+
+  getHABridgeStatus() {
+    return this.http.get<HABridgeStatus>({ url: route("/plugins/ha-bridge/status") });
+  }
+
+  getHABridgeEntities() {
+    return this.http.get<HAEntityMapping[]>({ url: route("/plugins/ha-bridge/entities") });
+  }
+
+  mapHAEntity(mapping: { entityId: string; itemId: string; linkType: string }) {
+    return this.http.post<typeof mapping, HAEntityMapping>({
+      url: route("/plugins/ha-bridge/entities/map"),
+      body: mapping,
+    });
+  }
+
+  removeHAEntityMapping(id: string) {
+    return this.http.delete<void>({ url: route(`/plugins/ha-bridge/entities/${id}`) });
+  }
+
+  getHAAutomations() {
+    return this.http.get<HAAutomation[]>({ url: route("/plugins/ha-bridge/automations") });
+  }
+
+  createHAAutomation(automation: Omit<HAAutomation, "id">) {
+    return this.http.post<typeof automation, HAAutomation>({
+      url: route("/plugins/ha-bridge/automations"),
+      body: automation,
+    });
+  }
+
+  deleteHAAutomation(id: string) {
+    return this.http.delete<void>({ url: route(`/plugins/ha-bridge/automations/${id}`) });
+  }
+
+  syncHA() {
+    return this.http.post<void, { synced: number }>({ url: route("/plugins/ha-bridge/sync") });
+  }
+
+  discoverHAEntities() {
+    return this.http.get<HADiscoveredEntity[]>({ url: route("/plugins/ha-bridge/discover") });
   }
 }

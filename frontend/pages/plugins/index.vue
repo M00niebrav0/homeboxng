@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import BaseContainer from "@/components/Base/Container.vue";
-  import BaseCard from "@/components/Base/Card.vue";
   import Subtitle from "~/components/global/Subtitle.vue";
+  import PluginCard from "~/components/Plugin/PluginCard.vue";
   import type { PluginInfo } from "~/lib/api/classes/plugins";
 
   definePageMeta({
@@ -13,269 +13,418 @@
 
   const api = useUserApi();
 
-  const { data: plugins, refresh: refreshPlugins } = useAsyncData("plugins", async () => {
+  // --- Plugin Registry (all built-in plugins with metadata) ---
+
+  interface PluginMeta {
+    name: string;
+    slug: string;
+    icon: string;
+    description: string;
+    category: "Data" | "Analytics" | "Integration" | "Utility" | "System";
+    version: string;
+    builtIn: boolean;
+    permissionCount: number;
+  }
+
+  const pluginRegistry: PluginMeta[] = [
+    {
+      name: "AI Vision",
+      slug: "ai-vision",
+      icon: "\uD83D\uDC41\uFE0F",
+      description: "AI-powered item identification from photos using vision models. Scan items, match to inventory, and auto-tag.",
+      category: "Data",
+      version: "1.0.0",
+      builtIn: true,
+      permissionCount: 3,
+    },
+    {
+      name: "Analytics",
+      slug: "analytics",
+      icon: "\uD83D\uDCCA",
+      description: "Inventory analytics dashboard with value tracking, location breakdowns, activity feed, and warranty alerts.",
+      category: "Analytics",
+      version: "1.0.0",
+      builtIn: true,
+      permissionCount: 1,
+    },
+    {
+      name: "Plugin Catalog",
+      slug: "catalog",
+      icon: "\uD83D\uDED2",
+      description: "Browse and install community plugins from the HomeBoxNG plugin catalog. HACS-like plugin marketplace.",
+      category: "System",
+      version: "1.0.0",
+      builtIn: true,
+      permissionCount: 2,
+    },
+    {
+      name: "Excel Export",
+      slug: "excel-export",
+      icon: "\uD83D\uDCC4",
+      description: "Export inventory data to CSV/TSV. Import items from spreadsheets with field mapping and conflict resolution.",
+      category: "Data",
+      version: "1.0.0",
+      builtIn: true,
+      permissionCount: 2,
+    },
+    {
+      name: "Eye-Fi Upload",
+      slug: "eyefi",
+      icon: "\uD83D\uDCF7",
+      description: "Receive photos from Eye-Fi cards and Wi-Fi cameras. Auto-scan uploaded images with AI Vision.",
+      category: "Integration",
+      version: "1.0.0",
+      builtIn: true,
+      permissionCount: 2,
+    },
+    {
+      name: "HA Bridge",
+      slug: "ha-bridge",
+      icon: "\uD83C\uDFE0",
+      description: "Home Assistant integration for entity mapping, automations, and real-time sync between HA and HomeBox.",
+      category: "Integration",
+      version: "1.0.0",
+      builtIn: true,
+      permissionCount: 4,
+    },
+    {
+      name: "Label Printer",
+      slug: "label-printer",
+      icon: "\uD83C\uDFF7\uFE0F",
+      description: "Print QR code labels for inventory items. Supports multiple label sizes, orientations, and half-labels.",
+      category: "Utility",
+      version: "1.0.0",
+      builtIn: true,
+      permissionCount: 1,
+    },
+    {
+      name: "Lending Tracker",
+      slug: "lending",
+      icon: "\uD83E\uDD1D",
+      description: "Track borrowed and lent items. Checkout, return, due dates, and overdue notifications.",
+      category: "Utility",
+      version: "1.0.0",
+      builtIn: true,
+      permissionCount: 2,
+    },
+    {
+      name: "Maintenance Scheduler",
+      slug: "maintenance-scheduler",
+      icon: "\uD83D\uDD27",
+      description: "Schedule recurring maintenance tasks, track service providers, and log repair history with cost tracking.",
+      category: "Utility",
+      version: "1.0.0",
+      builtIn: true,
+      permissionCount: 2,
+    },
+    {
+      name: "Notifications",
+      slug: "notifications",
+      icon: "\uD83D\uDD14",
+      description: "Multi-platform notifications: Email, Discord, Web Push, Gotify, and ntfy. Event-based alert routing.",
+      category: "System",
+      version: "1.0.0",
+      builtIn: true,
+      permissionCount: 3,
+    },
+    {
+      name: "Paperless-ngx",
+      slug: "paperless",
+      icon: "\uD83D\uDCC1",
+      description: "Connect to Paperless-ngx for document-item linking. Auto-sync, rule-based matching, and manual linking.",
+      category: "Integration",
+      version: "1.0.0",
+      builtIn: true,
+      permissionCount: 3,
+    },
+    {
+      name: "Shopping List",
+      slug: "shopping",
+      icon: "\uD83D\uDED2",
+      description: "Manage shopping lists with auto-reorder rules. Track quantities, preferred stores, and purchase status.",
+      category: "Utility",
+      version: "1.0.0",
+      builtIn: true,
+      permissionCount: 1,
+    },
+  ];
+
+  // --- API Data ---
+
+  const { data: livePlugins, refresh: refreshPlugins } = useAsyncData("plugins", async () => {
     const { data } = await api.plugins.getAll();
     return data;
   });
 
-  const selectedPlugin = ref<PluginInfo | null>(null);
-  const showConfigModal = ref(false);
-  const pluginConfig = ref<any[]>([]);
-  const pluginLogs = ref<any[]>([]);
-  const showLogsModal = ref(false);
-  const configValues = ref<Record<string, string>>({});
+  // --- Search & Filter State ---
 
-  async function openConfig(plugin: PluginInfo) {
-    selectedPlugin.value = plugin;
-    const { data } = await api.plugins.getConfig(plugin.name);
-    pluginConfig.value = data || [];
-    configValues.value = {};
-    for (const field of pluginConfig.value) {
-      configValues.value[field.key] = field.value || field.default || "";
-    }
-    showConfigModal.value = true;
+  const searchQuery = ref("");
+  const activeCategory = ref("All");
+  const statusFilter = ref("All");
+  const viewMode = ref<"grid" | "list">("grid");
+
+  const categories = ["All", "Data", "Analytics", "Integration", "Utility", "System"];
+  const statusOptions = ["All", "Enabled", "Disabled"];
+
+  // --- Computed: merge registry with live data ---
+
+  interface MergedPlugin extends PluginMeta {
+    status: "enabled" | "disabled" | "error";
+    liveData?: PluginInfo;
   }
 
-  async function saveConfig() {
-    if (!selectedPlugin.value) return;
-    await api.plugins.saveConfig(selectedPlugin.value.name, configValues.value);
-    showConfigModal.value = false;
-  }
-
-  async function openLogs(plugin: PluginInfo) {
-    selectedPlugin.value = plugin;
-    const { data } = await api.plugins.getLogs(plugin.name);
-    pluginLogs.value = data || [];
-    showLogsModal.value = true;
-  }
-
-  async function togglePlugin(plugin: PluginInfo) {
-    if (plugin.enabled) {
-      await api.plugins.disable(plugin.name);
-    } else {
-      await api.plugins.enable(plugin.name);
-    }
-    refreshPlugins();
-  }
-
-  const pluginCategories = computed(() => {
-    if (!plugins.value) return {};
-
-    const cats: Record<string, PluginInfo[]> = {
-      "AI & Vision": [],
-      "Notifications": [],
-      "Import & Export": [],
-      "Integrations": [],
-      "Inventory Management": [],
-    };
-
-    for (const p of plugins.value) {
-      if (p.name === "ai-vision") cats["AI & Vision"].push(p);
-      else if (p.name.includes("notify-") || p.name === "email" || p.name === "discord" || p.name === "webpush" || p.name === "gotify" || p.name === "ntfy")
-        cats["Notifications"].push(p);
-      else if (p.name === "excel-export" || p.name === "eyefi" || p.name === "paperless")
-        cats["Import & Export"].push(p);
-      else if (p.name === "ha-bridge" || p.name === "label-printer")
-        cats["Integrations"].push(p);
-      else cats["Inventory Management"].push(p);
-    }
-
-    // Remove empty categories
-    for (const key of Object.keys(cats)) {
-      if (cats[key].length === 0) delete cats[key];
-    }
-
-    return cats;
+  const mergedPlugins = computed<MergedPlugin[]>(() => {
+    return pluginRegistry.map(meta => {
+      const live = livePlugins.value?.find(p => p.name === meta.slug);
+      let pluginStatus: "enabled" | "disabled" | "error" = "disabled";
+      if (live) {
+        if (live.status === "error") pluginStatus = "error";
+        else if (live.enabled !== false) pluginStatus = "enabled";
+        else pluginStatus = "disabled";
+      }
+      return {
+        ...meta,
+        status: pluginStatus,
+        liveData: live || undefined,
+      };
+    });
   });
 
-  function pluginIcon(name: string): string {
-    const icons: Record<string, string> = {
-      "ai-vision": "mdi-eye",
-      "label-printer": "mdi-printer",
-      "eyefi": "mdi-camera-wireless",
-      "excel-export": "mdi-file-excel",
-      "paperless": "mdi-file-document",
-      "analytics": "mdi-chart-bar",
-      "ha-bridge": "mdi-home-assistant",
-      "lending": "mdi-hand-extended",
-      "maintenance": "mdi-wrench-clock",
-      "shopping": "mdi-cart",
-      "example": "mdi-code-braces",
-    };
-    return icons[name] || "mdi-puzzle";
-  }
+  // --- Computed: filtered plugins ---
 
-  function statusColor(plugin: PluginInfo): string {
-    if (!plugin.enabled) return "badge-ghost";
-    if (plugin.status === "running") return "badge-success";
-    if (plugin.status === "error") return "badge-error";
-    return "badge-info";
-  }
+  const filteredPlugins = computed(() => {
+    let result = mergedPlugins.value;
+
+    // Search filter
+    if (searchQuery.value.trim()) {
+      const q = searchQuery.value.toLowerCase();
+      result = result.filter(
+        p => p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q) || p.slug.toLowerCase().includes(q)
+      );
+    }
+
+    // Category filter
+    if (activeCategory.value !== "All") {
+      result = result.filter(p => p.category === activeCategory.value);
+    }
+
+    // Status filter
+    if (statusFilter.value === "Enabled") {
+      result = result.filter(p => p.status === "enabled");
+    } else if (statusFilter.value === "Disabled") {
+      result = result.filter(p => p.status !== "enabled");
+    }
+
+    return result;
+  });
+
+  // --- Computed: grouped by category ---
+
+  const groupedPlugins = computed(() => {
+    const groups: Record<string, MergedPlugin[]> = {};
+    for (const plugin of filteredPlugins.value) {
+      if (!groups[plugin.category]) {
+        groups[plugin.category] = [];
+      }
+      groups[plugin.category].push(plugin);
+    }
+    return groups;
+  });
+
+  // --- Stats ---
+
+  const totalPlugins = computed(() => pluginRegistry.length);
+  const enabledCount = computed(() => mergedPlugins.value.filter(p => p.status === "enabled").length);
+  const disabledCount = computed(() => mergedPlugins.value.filter(p => p.status !== "enabled").length);
+  const updatesAvailable = ref(0); // Placeholder for future catalog integration
 </script>
 
 <template>
   <div>
     <BaseContainer class="flex flex-col gap-6">
       <!-- Header -->
-      <div class="flex items-center justify-between">
+      <div class="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 class="text-2xl font-bold">Plugin Manager</h1>
+          <h1 class="text-2xl font-bold">Plugin Hub</h1>
           <p class="text-sm opacity-70">
-            Manage built-in and third-party plugins. Enable, disable, and configure plugins to extend HomeBoxNG.
+            Manage, configure, and extend HomeBoxNG with built-in and third-party plugins.
           </p>
         </div>
-        <div class="flex gap-2">
+        <div class="flex gap-2 flex-wrap">
           <button class="btn btn-sm btn-outline" @click="refreshPlugins">
             Refresh
           </button>
-          <NuxtLink to="/plugins/catalog" class="btn btn-sm btn-primary">
+          <NuxtLink to="/plugins/catalog" class="btn btn-sm btn-outline">
             Browse Catalog
+          </NuxtLink>
+          <NuxtLink to="/settings" class="btn btn-sm btn-ghost">
+            Plugin Settings
           </NuxtLink>
         </div>
       </div>
 
-      <!-- Plugin Stats -->
+      <!-- Stats Row -->
       <div class="stats shadow w-full">
         <div class="stat">
           <div class="stat-title">Total Plugins</div>
-          <div class="stat-value text-primary">{{ plugins?.length || 0 }}</div>
-        </div>
-        <div class="stat">
-          <div class="stat-title">Built-in</div>
-          <div class="stat-value">{{ plugins?.filter(p => p.builtIn).length || 0 }}</div>
+          <div class="stat-value text-primary">{{ totalPlugins }}</div>
         </div>
         <div class="stat">
           <div class="stat-title">Enabled</div>
-          <div class="stat-value text-success">{{ plugins?.filter(p => p.enabled !== false).length || 0 }}</div>
+          <div class="stat-value text-success">{{ enabledCount }}</div>
+        </div>
+        <div class="stat">
+          <div class="stat-title">Disabled</div>
+          <div class="stat-value text-base-content/50">{{ disabledCount }}</div>
+        </div>
+        <div class="stat">
+          <div class="stat-title">Updates</div>
+          <div class="stat-value" :class="updatesAvailable > 0 ? 'text-warning' : 'text-base-content/30'">
+            {{ updatesAvailable }}
+          </div>
+          <div v-if="updatesAvailable > 0" class="stat-desc text-warning">Available</div>
         </div>
       </div>
 
-      <!-- Plugins by Category -->
-      <template v-for="(categoryPlugins, category) in pluginCategories" :key="category">
+      <!-- Search & Filter Bar -->
+      <div class="flex flex-col gap-3">
+        <!-- Search Input -->
+        <div class="flex gap-3 flex-wrap items-center">
+          <div class="form-control flex-1 min-w-[200px]">
+            <input
+              v-model="searchQuery"
+              type="text"
+              placeholder="Search plugins by name or description..."
+              class="input input-bordered input-sm w-full"
+            />
+          </div>
+
+          <!-- Status Filter -->
+          <select v-model="statusFilter" class="select select-bordered select-sm">
+            <option v-for="opt in statusOptions" :key="opt" :value="opt">
+              {{ opt === "All" ? "All Status" : opt }}
+            </option>
+          </select>
+
+          <!-- View Toggle -->
+          <div class="join">
+            <button
+              class="btn btn-sm join-item"
+              :class="viewMode === 'grid' ? 'btn-active' : 'btn-ghost'"
+              title="Grid view"
+              @click="viewMode = 'grid'"
+            >
+              Grid
+            </button>
+            <button
+              class="btn btn-sm join-item"
+              :class="viewMode === 'list' ? 'btn-active' : 'btn-ghost'"
+              title="List view"
+              @click="viewMode = 'list'"
+            >
+              List
+            </button>
+          </div>
+        </div>
+
+        <!-- Category Tabs -->
+        <div class="tabs tabs-boxed bg-base-200 w-fit">
+          <button
+            v-for="cat in categories"
+            :key="cat"
+            class="tab tab-sm"
+            :class="{ 'tab-active': activeCategory === cat }"
+            @click="activeCategory = cat"
+          >
+            {{ cat }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Results Count -->
+      <div class="flex items-center justify-between">
+        <p class="text-sm opacity-60">
+          Showing {{ filteredPlugins.length }} of {{ totalPlugins }} plugins
+        </p>
+      </div>
+
+      <!-- Plugin Grid / List grouped by category -->
+      <template v-for="(categoryPlugins, category) in groupedPlugins" :key="category">
         <section>
           <Subtitle>{{ category }}</Subtitle>
-          <div class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-            <BaseCard
-              v-for="plugin in categoryPlugins"
-              :key="plugin.name"
-              class="relative"
-            >
-              <div class="flex items-start gap-3 p-4">
-                <!-- Plugin Info -->
-                <div class="flex-1 min-w-0">
-                  <div class="flex items-center gap-2">
-                    <h3 class="font-semibold truncate">{{ plugin.name }}</h3>
-                    <span class="badge badge-xs" :class="statusColor(plugin)">
-                      {{ plugin.enabled !== false ? "enabled" : "disabled" }}
-                    </span>
-                    <span v-if="plugin.builtIn" class="badge badge-xs badge-outline">built-in</span>
-                  </div>
-                  <p class="text-xs opacity-60 mt-1">v{{ plugin.version }} by {{ plugin.author }}</p>
-                  <p class="text-sm mt-2 line-clamp-2">{{ plugin.description }}</p>
-                </div>
-              </div>
 
-              <!-- Actions -->
-              <div class="flex gap-1 p-2 pt-0 justify-end">
-                <button class="btn btn-xs btn-ghost" @click="openLogs(plugin)">Logs</button>
-                <button class="btn btn-xs btn-ghost" @click="openConfig(plugin)">Config</button>
-                <button
-                  class="btn btn-xs"
-                  :class="plugin.enabled !== false ? 'btn-warning' : 'btn-success'"
-                  @click="togglePlugin(plugin)"
-                >
-                  {{ plugin.enabled !== false ? "Disable" : "Enable" }}
-                </button>
+          <!-- Grid View -->
+          <div
+            v-if="viewMode === 'grid'"
+            class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+          >
+            <PluginCard
+              v-for="plugin in categoryPlugins"
+              :key="plugin.slug"
+              :name="plugin.name"
+              :slug="plugin.slug"
+              :description="plugin.description"
+              :icon="plugin.icon"
+              :version="plugin.version"
+              :status="plugin.status"
+              :permission-count="plugin.permissionCount"
+              :built-in="plugin.builtIn"
+              :category="plugin.category"
+            />
+          </div>
+
+          <!-- List View -->
+          <div v-else class="flex flex-col gap-2">
+            <div
+              v-for="plugin in categoryPlugins"
+              :key="plugin.slug"
+              class="flex items-center gap-4 p-3 rounded-lg border border-base-200 hover:border-primary/30 hover:bg-base-200/50 cursor-pointer transition-all duration-150"
+              @click="$router.push(`/plugins/${plugin.slug}`)"
+            >
+              <div class="text-xl w-8 text-center flex-shrink-0">{{ plugin.icon }}</div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="font-semibold text-sm">{{ plugin.name }}</span>
+                  <span
+                    class="w-2 h-2 rounded-full flex-shrink-0"
+                    :class="{
+                      'bg-success': plugin.status === 'enabled',
+                      'bg-base-300': plugin.status === 'disabled',
+                      'bg-error': plugin.status === 'error',
+                    }"
+                  />
+                  <span v-if="plugin.builtIn" class="badge badge-xs badge-outline">Built-in</span>
+                </div>
+                <p class="text-xs opacity-50 truncate">{{ plugin.description }}</p>
               </div>
-            </BaseCard>
+              <div class="flex items-center gap-2 flex-shrink-0">
+                <span class="text-xs opacity-40 font-mono">v{{ plugin.version }}</span>
+                <span class="badge badge-xs badge-ghost">{{ plugin.category }}</span>
+              </div>
+            </div>
           </div>
         </section>
       </template>
 
       <!-- Empty State -->
-      <div v-if="!plugins || plugins.length === 0" class="text-center py-12 opacity-50">
-        <p class="text-lg">No plugins found</p>
-        <p class="text-sm mt-2">Check that the backend is running and plugins are registered.</p>
+      <div v-if="filteredPlugins.length === 0" class="text-center py-16 opacity-50">
+        <p class="text-4xl mb-4">
+          {{ searchQuery ? "\uD83D\uDD0D" : "\uD83E\uDDE9" }}
+        </p>
+        <p class="text-lg">
+          {{ searchQuery ? "No plugins match your search" : "No plugins found" }}
+        </p>
+        <p class="text-sm mt-2">
+          {{ searchQuery ? "Try a different search term or clear filters." : "Check that the backend is running and plugins are registered." }}
+        </p>
+        <button
+          v-if="searchQuery || activeCategory !== 'All' || statusFilter !== 'All'"
+          class="btn btn-sm btn-outline mt-4"
+          @click="searchQuery = ''; activeCategory = 'All'; statusFilter = 'All'"
+        >
+          Clear Filters
+        </button>
       </div>
     </BaseContainer>
-
-    <!-- Config Modal -->
-    <dialog class="modal" :class="{ 'modal-open': showConfigModal }">
-      <div class="modal-box max-w-lg">
-        <h3 class="font-bold text-lg">{{ selectedPlugin?.name }} - Configuration</h3>
-        <div class="py-4 space-y-4">
-          <div v-for="field in pluginConfig" :key="field.key" class="form-control">
-            <label class="label">
-              <span class="label-text font-medium">{{ field.label }}</span>
-              <span v-if="field.required" class="label-text-alt text-error">Required</span>
-            </label>
-            <p class="text-xs opacity-60 mb-1">{{ field.description }}</p>
-
-            <select
-              v-if="field.type === 'select'"
-              v-model="configValues[field.key]"
-              class="select select-bordered select-sm w-full"
-            >
-              <option v-for="opt in field.options" :key="opt" :value="opt">{{ opt }}</option>
-            </select>
-
-            <input
-              v-else-if="field.type === 'boolean'"
-              v-model="configValues[field.key]"
-              type="checkbox"
-              class="toggle toggle-primary"
-              true-value="true"
-              false-value="false"
-            />
-
-            <input
-              v-else
-              v-model="configValues[field.key]"
-              :type="field.type === 'secret' ? 'password' : field.type === 'number' ? 'number' : 'text'"
-              :placeholder="field.default"
-              class="input input-bordered input-sm w-full"
-            />
-          </div>
-        </div>
-        <div class="modal-action">
-          <button class="btn btn-sm" @click="showConfigModal = false">Cancel</button>
-          <button class="btn btn-sm btn-primary" @click="saveConfig">Save</button>
-        </div>
-      </div>
-      <div class="modal-backdrop" @click="showConfigModal = false" />
-    </dialog>
-
-    <!-- Logs Modal -->
-    <dialog class="modal" :class="{ 'modal-open': showLogsModal }">
-      <div class="modal-box max-w-2xl">
-        <h3 class="font-bold text-lg">{{ selectedPlugin?.name }} - Logs</h3>
-        <div class="py-4">
-          <div v-if="pluginLogs.length === 0" class="text-center opacity-50 py-8">
-            No log entries
-          </div>
-          <div v-else class="overflow-y-auto max-h-96 space-y-1">
-            <div
-              v-for="(entry, i) in pluginLogs"
-              :key="i"
-              class="text-xs font-mono p-2 rounded"
-              :class="{
-                'bg-error/10 text-error': entry.level === 'error',
-                'bg-warning/10 text-warning': entry.level === 'warn',
-                'bg-base-200': entry.level === 'info',
-                'opacity-60': entry.level === 'debug',
-              }"
-            >
-              <span class="opacity-50">{{ entry.timestamp }}</span>
-              <span class="ml-2 font-semibold uppercase">{{ entry.level }}</span>
-              <span class="ml-2">{{ entry.message }}</span>
-            </div>
-          </div>
-        </div>
-        <div class="modal-action">
-          <button class="btn btn-sm" @click="showLogsModal = false">Close</button>
-        </div>
-      </div>
-      <div class="modal-backdrop" @click="showLogsModal = false" />
-    </dialog>
   </div>
 </template>
