@@ -23,7 +23,7 @@
   const { t } = useI18n();
 
   useHead({
-    title: "HomeBox | " + t("index.title"),
+    title: "HomeBoxNG | " + t("index.title"),
   });
 
   definePageMeta({
@@ -239,10 +239,9 @@
         }"
       >
         <div class="z-10">
-          <h2 class="mt-1 flex text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-            HomeB
-            <AppLogo class="-mb-4 w-12" />
-            x
+          <h2 class="mt-1 flex items-center gap-3 text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
+            <AppLogo class="w-14 drop-shadow-lg sm:w-16" />
+            <span>HomeBox<span class="bg-gradient-to-r from-indigo-200 to-purple-200 bg-clip-text text-transparent">NG</span></span>
           </h2>
           <p
             class="ml-1 text-lg"
@@ -258,7 +257,7 @@
           <div class="z-10 ml-auto mt-6 flex items-center gap-4 sm:mt-0">
             <Tooltip>
               <TooltipTrigger as-child>
-                <a href="https://github.com/sysadminsmedia/homebox" target="_blank" rel="noopener noreferrer">
+                <a href="https://github.com/M00niebrav0/homeboxng" target="_blank" rel="noopener noreferrer">
                   <MdiGithub class="size-8" />
                 </a>
               </TooltipTrigger>

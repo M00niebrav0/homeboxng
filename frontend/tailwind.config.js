@@ -3,6 +3,10 @@ export default {
   darkMode: ["class"],
   safelist: [
     "dark",
+    "theme-midnight",
+    "theme-aurora",
+    "theme-ember",
+    "theme-frost",
     "theme-aqua",
     "theme-black",
     "theme-bumblebee",

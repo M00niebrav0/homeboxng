@@ -71,10 +71,10 @@ export default defineNuxtConfig({
       enabled: false,
     },
     manifest: {
-      name: "Homebox",
-      short_name: "Homebox",
-      description: "Home Inventory App",
-      theme_color: "#5b7f67",
+      name: "HomeBoxNG",
+      short_name: "HomeBoxNG",
+      description: "Next-Gen Home Inventory Management",
+      theme_color: "#6366f1",
       start_url: "/home",
       icons: [
         {

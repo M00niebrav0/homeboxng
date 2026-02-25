@@ -165,6 +165,50 @@
     else setTheme("homebox");
   }
 
+  // Featured themes with color swatches for the theme picker
+  interface ThemePreview {
+    name: string;
+    value: string;
+    type: "dark" | "light";
+    colors: { bg: string; primary: string; accent: string; text: string };
+    featured: boolean;
+  }
+
+  const themePreviewList: ThemePreview[] = [
+    { name: "Midnight", value: "midnight", type: "dark", featured: true, colors: { bg: "#0f172a", primary: "#3b82f6", accent: "#3b82f6", text: "#e8edf4" } },
+    { name: "Aurora", value: "aurora", type: "light", featured: true, colors: { bg: "#ffffff", primary: "#8b5cf6", accent: "#8b5cf6", text: "#030712" } },
+    { name: "Ember", value: "ember", type: "dark", featured: true, colors: { bg: "#1c1917", primary: "#f59e0b", accent: "#f59e0b", text: "#e8dfd0" } },
+    { name: "Frost", value: "frost", type: "light", featured: true, colors: { bg: "#f8fafc", primary: "#14b8a6", accent: "#14b8a6", text: "#334155" } },
+    { name: "Homebox", value: "homebox", type: "light", featured: false, colors: { bg: "#ffffff", primary: "#5b7f67", accent: "#d6ecda", text: "#333333" } },
+    { name: "Garden", value: "garden", type: "light", featured: false, colors: { bg: "#e8e6e3", primary: "#5b7f67", accent: "#e1eeda", text: "#0f0f0e" } },
+    { name: "Night", value: "night", type: "dark", featured: false, colors: { bg: "#0f172a", primary: "#38bdf8", accent: "#818cf8", text: "#a6b7d4" } },
+    { name: "Dracula", value: "dracula", type: "dark", featured: false, colors: { bg: "#282a36", primary: "#ff79c6", accent: "#bd93f9", text: "#f8f8f2" } },
+    { name: "Corporate", value: "corporate", type: "light", featured: false, colors: { bg: "#ffffff", primary: "#4b6bfb", accent: "#7b92b2", text: "#171717" } },
+    { name: "Forest", value: "forest", type: "dark", featured: false, colors: { bg: "#171212", primary: "#1eb854", accent: "#1db88e", text: "#cec5c5" } },
+    { name: "Winter", value: "winter", type: "light", featured: false, colors: { bg: "#ffffff", primary: "#047aff", accent: "#463aa1", text: "#394e6a" } },
+    { name: "Luxury", value: "luxury", type: "dark", featured: false, colors: { bg: "#09090b", primary: "#ffffff", accent: "#152747", text: "#d4a256" } },
+    { name: "Business", value: "business", type: "dark", featured: false, colors: { bg: "#202020", primary: "#1c4f82", accent: "#7c909a", text: "#d1d1d1" } },
+    { name: "Coffee", value: "coffee", type: "dark", featured: false, colors: { bg: "#211720", primary: "#db924b", accent: "#263e3f", text: "#756458" } },
+    { name: "Synthwave", value: "synthwave", type: "dark", featured: false, colors: { bg: "#2d1b69", primary: "#e779c1", accent: "#58c7f3", text: "#f9f7fd" } },
+    { name: "Emerald", value: "emerald", type: "light", featured: false, colors: { bg: "#ffffff", primary: "#66cc8a", accent: "#377cfb", text: "#333c4d" } },
+    { name: "Cupcake", value: "cupcake", type: "light", featured: false, colors: { bg: "#faf7f5", primary: "#65c3c8", accent: "#ef9fbc", text: "#291334" } },
+    { name: "Pastel", value: "pastel", type: "light", featured: false, colors: { bg: "#ffffff", primary: "#d1c1d7", accent: "#f6cdd5", text: "#333333" } },
+    { name: "Lofi", value: "lofi", type: "light", featured: false, colors: { bg: "#ffffff", primary: "#0d0d0d", accent: "#1a1a1a", text: "#000000" } },
+    { name: "Black", value: "black", type: "dark", featured: false, colors: { bg: "#000000", primary: "#343232", accent: "#343232", text: "#cccccc" } },
+  ];
+
+  const themeFilterMode = ref<"all" | "dark" | "light">("all");
+
+  const filteredThemes = computed(() => {
+    if (themeFilterMode.value === "all") return themePreviewList;
+    return themePreviewList.filter(t => t.type === themeFilterMode.value);
+  });
+
+  function selectTheme(themeValue: string) {
+    setTheme(themeValue as any);
+    toast.success(`Theme changed to "${themeValue}".`);
+  }
+
   // ==================== Notifications Section ====================
   interface NotifCategory {
     id: string;
@@ -324,12 +368,15 @@
     const { data } = await api.plugins.getAll();
     if (data) {
       const entries: PluginPermEntry[] = [];
-      for (const p of data) {
-        const permsResp = await api.plugins.getPermissions(p.name);
+      for (const p of data as any[]) {
+        // Handle both PluginStatus (nested info) and flat PluginInfo responses
+        const name = p.info?.name || p.name || '';
+        const enabled = p.state === 'running' || p.state === 'started' || (p.enabled !== undefined ? p.enabled !== false : true);
+        const permsResp = await api.plugins.getPermissions(name);
         const perms = permsResp.data || [];
         entries.push({
-          name: p.name,
-          enabled: p.enabled !== false,
+          name,
+          enabled,
           permissions: perms.map(pr => pr.permission),
           grantedCount: perms.filter(pr => pr.granted).length,
           totalCount: perms.length,
@@ -767,36 +814,108 @@
 
       <!-- ==================== Appearance Tab ==================== -->
       <template v-if="activeTab === 'appearance'">
+        <!-- Theme Picker -->
         <BaseCard>
           <template #title>
             <BaseSectionHeader>
               <MdiPalette class="-mt-1 mr-2" />
-              <span>Appearance</span>
-              <template #description>Customize how HomeBoxNG looks and feels.</template>
+              <span>Theme</span>
+              <template #description>Choose a color theme for HomeBoxNG. Currently using <strong>{{ currentTheme }}</strong>.</template>
+            </BaseSectionHeader>
+          </template>
+
+          <div class="space-y-4 p-4">
+            <!-- Filter buttons -->
+            <div class="flex gap-2">
+              <Button
+                v-for="mode in [{ label: 'All', value: 'all' }, { label: 'Light', value: 'light' }, { label: 'Dark', value: 'dark' }]"
+                :key="mode.value"
+                :variant="themeFilterMode === mode.value ? 'default' : 'outline'"
+                size="sm"
+                @click="themeFilterMode = mode.value as any"
+              >
+                {{ mode.label }}
+              </Button>
+            </div>
+
+            <!-- Featured themes -->
+            <div v-if="themeFilterMode === 'all' || filteredThemes.some(t => t.featured)" class="space-y-2">
+              <p class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Featured</p>
+              <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <button
+                  v-for="t in filteredThemes.filter(t => t.featured)"
+                  :key="t.value"
+                  class="group relative overflow-hidden rounded-xl border-2 transition-all duration-200 hover:scale-[1.02]"
+                  :class="currentTheme === t.value ? 'border-primary ring-2 ring-primary/30' : 'border-border hover:border-primary/50'"
+                  @click="selectTheme(t.value)"
+                >
+                  <!-- Theme preview swatch -->
+                  <div
+                    class="flex h-20 flex-col justify-between p-2.5"
+                    :style="{ backgroundColor: t.colors.bg }"
+                  >
+                    <div class="flex items-center gap-1.5">
+                      <div class="h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: t.colors.primary }" />
+                      <div class="h-1.5 w-8 rounded-full" :style="{ backgroundColor: t.colors.primary, opacity: 0.7 }" />
+                    </div>
+                    <div class="flex gap-1">
+                      <div class="h-1.5 flex-1 rounded" :style="{ backgroundColor: t.colors.text, opacity: 0.15 }" />
+                      <div class="h-1.5 flex-1 rounded" :style="{ backgroundColor: t.colors.text, opacity: 0.1 }" />
+                    </div>
+                    <div class="flex items-center gap-1">
+                      <div class="h-4 w-10 rounded" :style="{ backgroundColor: t.colors.primary }" />
+                      <div class="h-4 w-6 rounded" :style="{ backgroundColor: t.colors.accent, opacity: 0.3 }" />
+                    </div>
+                  </div>
+                  <!-- Label -->
+                  <div class="flex items-center justify-between px-2.5 py-2">
+                    <span class="text-xs font-medium">{{ t.name }}</span>
+                    <Badge v-if="currentTheme === t.value" variant="default" class="text-[9px]">Active</Badge>
+                    <Badge v-else variant="outline" class="text-[9px]">{{ t.type }}</Badge>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <!-- All themes -->
+            <div class="space-y-2">
+              <p class="text-xs font-medium uppercase tracking-wider text-muted-foreground">All Themes</p>
+              <div class="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+                <button
+                  v-for="t in filteredThemes.filter(t => !t.featured)"
+                  :key="t.value"
+                  class="group overflow-hidden rounded-lg border-2 transition-all duration-150 hover:scale-[1.03]"
+                  :class="currentTheme === t.value ? 'border-primary ring-2 ring-primary/30' : 'border-border hover:border-primary/50'"
+                  @click="selectTheme(t.value)"
+                >
+                  <div
+                    class="flex h-10 items-center justify-center gap-1 px-1.5"
+                    :style="{ backgroundColor: t.colors.bg }"
+                  >
+                    <div class="h-3 w-3 rounded-full" :style="{ backgroundColor: t.colors.primary }" />
+                    <div class="h-3 w-3 rounded-full" :style="{ backgroundColor: t.colors.accent }" />
+                    <div class="h-3 w-3 rounded-full" :style="{ backgroundColor: t.colors.text, opacity: 0.3 }" />
+                  </div>
+                  <div class="px-1.5 py-1.5 text-center">
+                    <span class="text-[10px] font-medium">{{ t.name }}</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        </BaseCard>
+
+        <!-- Display Preferences -->
+        <BaseCard>
+          <template #title>
+            <BaseSectionHeader>
+              <MdiMonitor class="-mt-1 mr-2" />
+              <span>Display Preferences</span>
+              <template #description>Configure layout and formatting options.</template>
             </BaseSectionHeader>
           </template>
 
           <div class="space-y-6 p-4">
-            <!-- Theme Mode -->
-            <div class="space-y-2">
-              <Label class="text-sm font-medium">Theme Mode</Label>
-              <div class="flex flex-wrap gap-2">
-                <Button
-                  v-for="mode in ['system', 'light', 'dark']"
-                  :key="mode"
-                  :variant="themeMode === mode ? 'default' : 'outline'"
-                  size="sm"
-                  @click="applyThemeMode(mode)"
-                >
-                  <MdiMonitor v-if="mode === 'system'" class="mr-1 h-4 w-4" />
-                  {{ mode.charAt(0).toUpperCase() + mode.slice(1) }}
-                </Button>
-              </div>
-              <p class="text-xs text-muted-foreground">
-                Current theme: <strong>{{ currentTheme }}</strong>
-              </p>
-            </div>
-
             <!-- Compact Mode -->
             <div class="flex items-center justify-between rounded-lg border p-3">
               <div>

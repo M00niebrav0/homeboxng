@@ -436,62 +436,6 @@
       active: computed(() => route.path.startsWith("/plugins")),
       name: computed(() => "Plugins"),
       to: "/plugins",
-      collapsible: [
-        {
-          id: 71,
-          active: computed(() => route.path === "/plugins/ai-vision"),
-          name: computed(() => "AI Vision"),
-          to: "/plugins/ai-vision",
-        },
-        {
-          id: 72,
-          active: computed(() => route.path === "/plugins/notifications"),
-          name: computed(() => "Notifications"),
-          to: "/plugins/notifications",
-        },
-        {
-          id: 73,
-          active: computed(() => route.path === "/plugins/label-printer"),
-          name: computed(() => "Label Printer"),
-          to: "/plugins/label-printer",
-        },
-        {
-          id: 74,
-          active: computed(() => route.path === "/plugins/analytics"),
-          name: computed(() => "Analytics"),
-          to: "/plugins/analytics",
-        },
-        {
-          id: 75,
-          active: computed(() => route.path === "/plugins/lending"),
-          name: computed(() => "Lending"),
-          to: "/plugins/lending",
-        },
-        {
-          id: 76,
-          active: computed(() => route.path === "/plugins/shopping"),
-          name: computed(() => "Shopping"),
-          to: "/plugins/shopping",
-        },
-        {
-          id: 77,
-          active: computed(() => route.path === "/plugins/catalog"),
-          name: computed(() => "Catalog"),
-          to: "/plugins/catalog",
-        },
-        {
-          id: 78,
-          active: computed(() => route.path === "/plugins/ha-bridge"),
-          name: computed(() => "HA Bridge"),
-          to: "/plugins/ha-bridge",
-        },
-        {
-          id: 79,
-          active: computed(() => route.path === "/plugins/manage"),
-          name: computed(() => "Manage"),
-          to: "/plugins/manage",
-        },
-      ],
     },
     {
       icon: MdiShieldLock,

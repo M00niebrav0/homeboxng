@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 160" fill="none">
+  <defs>
+    <linearGradient id="lg-primary" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="lg-accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#818cf8;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#a78bfa;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="lg-dark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4338ca;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#6d28d9;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Icon: Box mark (scaled to fit ~140x140 within 160 height) -->
+  <g transform="translate(10, 8) scale(0.28)">
+    <!-- Box body - top face -->
+    <path d="M256 80 L416 170 L256 260 L96 170 Z" fill="url(#lg-accent)" />
+    <!-- Box body - left face -->
+    <path d="M96 170 L256 260 L256 420 L96 330 Z" fill="url(#lg-primary)" />
+    <!-- Box body - right face -->
+    <path d="M416 170 L256 260 L256 420 L416 330 Z" fill="url(#lg-dark)" />
+    <!-- Box lid - left flap -->
+    <path d="M256 80 L96 170 L96 148 L256 58 Z" fill="url(#lg-accent)" opacity="0.9" />
+    <!-- Box lid - right flap (slightly open) -->
+    <path d="M256 80 L416 170 L430 140 L270 50 Z" fill="url(#lg-primary)" opacity="0.85" />
+    <!-- NG badge -->
+    <rect x="310" y="290" width="110" height="56" rx="8" fill="#ffffff" opacity="0.95" />
+    <text x="365" y="327" font-family="Inter, system-ui, -apple-system, sans-serif" font-weight="800" font-size="34" fill="#4338ca" text-anchor="middle" dominant-baseline="middle">NG</text>
+    <!-- Edge highlights -->
+    <path d="M256 80 L256 260" stroke="#ffffff" stroke-width="1.5" opacity="0.3" />
+    <path d="M256 260 L256 420" stroke="#ffffff" stroke-width="1" opacity="0.15" />
+    <path d="M96 170 L256 260 L416 170" stroke="#ffffff" stroke-width="1.5" opacity="0.2" fill="none" />
+  </g>
+
+  <!-- Text: "HomeBoxNG" -->
+  <g transform="translate(160, 0)">
+    <!-- "HomeBox" in primary gradient -->
+    <text y="105" font-family="Inter, system-ui, -apple-system, sans-serif" font-weight="700" font-size="72" fill="#6366f1" letter-spacing="-2">HomeBox</text>
+    <!-- "NG" in darker accent -->
+    <text x="378" y="105" font-family="Inter, system-ui, -apple-system, sans-serif" font-weight="800" font-size="72" fill="#4338ca" letter-spacing="-1">NG</text>
+  </g>
+</svg>

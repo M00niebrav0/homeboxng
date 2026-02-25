@@ -70,9 +70,29 @@
   const api = useUserApi();
 
   // ==================== Plugin Overview ====================
+  interface FlatPlugin {
+    name: string;
+    version: string;
+    description: string;
+    author: string;
+    builtIn: boolean;
+    enabled: boolean;
+    status: string;
+    error: string;
+  }
+
   const { data: plugins, refresh: refreshPlugins } = useAsyncData("manage-plugins", async () => {
     const { data } = await api.plugins.getAll();
-    return data || [];
+    return (data || []).map((ps: any): FlatPlugin => ({
+      name: ps.info?.name || ps.name || '',
+      version: ps.info?.version || ps.version || '',
+      description: ps.info?.description || ps.description || '',
+      author: ps.info?.author || ps.author || '',
+      builtIn: ps.info?.builtIn ?? ps.builtIn ?? false,
+      enabled: ps.state === 'running' || ps.state === 'started' || (ps.enabled !== undefined ? ps.enabled !== false : true),
+      status: ps.state || ps.status || 'unknown',
+      error: ps.error || '',
+    }));
   });
 
   const refreshLoading = ref(false);
@@ -84,28 +104,28 @@
     toast.success("Plugin list refreshed.");
   }
 
-  function statusDotClass(plugin: PluginInfo): string {
+  function statusDotClass(plugin: FlatPlugin): string {
     if (!plugin.enabled) return "bg-gray-400";
     if (plugin.status === "running") return "bg-green-500";
     if (plugin.status === "error") return "bg-red-500";
     return "bg-yellow-500";
   }
 
-  function statusLabel(plugin: PluginInfo): string {
+  function statusLabel(plugin: FlatPlugin): string {
     if (!plugin.enabled) return "Disabled";
     if (plugin.status === "running") return "Healthy";
     if (plugin.status === "error") return "Error";
     return "Warning";
   }
 
-  function statusBadgeVariant(plugin: PluginInfo): "default" | "secondary" | "destructive" | "outline" {
+  function statusBadgeVariant(plugin: FlatPlugin): "default" | "secondary" | "destructive" | "outline" {
     if (!plugin.enabled) return "outline";
     if (plugin.status === "running") return "default";
     if (plugin.status === "error") return "destructive";
     return "secondary";
   }
 
-  async function togglePlugin(plugin: PluginInfo) {
+  async function togglePlugin(plugin: FlatPlugin) {
     if (plugin.enabled) {
       await api.plugins.disable(plugin.name);
       toast.success(`Plugin "${plugin.name}" disabled.`);
@@ -118,11 +138,11 @@
 
   // ==================== Permission Review Modal ====================
   const showPermModal = ref(false);
-  const permPlugin = ref<PluginInfo | null>(null);
+  const permPlugin = ref<FlatPlugin | null>(null);
   const permList = ref<PluginPermission[]>([]);
   const permLoading = ref(false);
 
-  async function openPermissions(plugin: PluginInfo) {
+  async function openPermissions(plugin: FlatPlugin) {
     permPlugin.value = plugin;
     permLoading.value = true;
     showPermModal.value = true;

@@ -28,7 +28,11 @@ export type DaisyTheme =
   | "lemonade"
   | "night"
   | "coffee"
-  | "winter";
+  | "winter"
+  | "midnight"
+  | "aurora"
+  | "ember"
+  | "frost";
 
 export type ThemeOption = {
   label: string;
@@ -36,6 +40,22 @@ export type ThemeOption = {
 };
 
 export const themes: ThemeOption[] = [
+  {
+    label: "Midnight",
+    value: "midnight",
+  },
+  {
+    label: "Aurora",
+    value: "aurora",
+  },
+  {
+    label: "Ember",
+    value: "ember",
+  },
+  {
+    label: "Frost",
+    value: "frost",
+  },
   {
     label: "Homebox",
     value: "homebox",
@@ -155,6 +175,8 @@ export const themes: ThemeOption[] = [
 ];
 
 export const darkThemes: DaisyTheme[] = [
+  "midnight",
+  "ember",
   "synthwave",
   "retro",
   "cyberpunk",
