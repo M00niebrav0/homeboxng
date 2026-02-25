@@ -11,6 +11,7 @@ import (
 	"github.com/sysadminsmedia/homebox/backend/internal/core/plugins/builtin/example"
 	"github.com/sysadminsmedia/homebox/backend/internal/core/plugins/builtin/habridge"
 	"github.com/sysadminsmedia/homebox/backend/internal/core/plugins/builtin/itasset"
+	"github.com/sysadminsmedia/homebox/backend/internal/core/plugins/builtin/updater"
 	"github.com/sysadminsmedia/homebox/backend/internal/core/plugins/builtin/labelprinter"
 	"github.com/sysadminsmedia/homebox/backend/internal/core/plugins/builtin/lending"
 	"github.com/sysadminsmedia/homebox/backend/internal/core/plugins/builtin/maintenance"
@@ -161,6 +162,13 @@ func registerBuiltinPlugins(app *app) {
 	// and user-uploaded manual management for inventory items.
 	if err := app.pluginRegistry.Register(manuals.New()); err != nil {
 		log.Error().Err(err).Msg("failed to register manuals plugin")
+	}
+
+	// =========================================================================
+	// Updater Plugin - Automatic update management with backup-before-update.
+	// Off by default. Users can enable during setup or in plugin settings.
+	if err := app.pluginRegistry.Register(updater.New()); err != nil {
+		log.Error().Err(err).Msg("failed to register updater plugin")
 	}
 
 	// Planned built-in plugins (registered as they are implemented):

@@ -21,6 +21,7 @@
   import MdiServerNetwork from "~icons/mdi/server-network";
   import MdiBatteryCharging from "~icons/mdi/battery-charging";
   import MdiBookOpenPageVariant from "~icons/mdi/book-open-page-variant";
+  import MdiUpdate from "~icons/mdi/update";
 
   import { Input } from "~/components/ui/input";
   import { Button } from "~/components/ui/button";
@@ -118,6 +119,11 @@
       category: "Inventory & Data",
       icon: MdiBookOpenPageVariant,
       description: "Find, link, and manage product manuals from ManualsLib and other sources",
+    },
+    updater: {
+      category: "System",
+      icon: MdiUpdate,
+      description: "Manage automatic updates, backups, and version control for HomeBoxNG",
     },
   };
 
