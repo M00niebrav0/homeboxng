@@ -16,9 +16,12 @@
   import MdiPackageVariantClosed from "~icons/mdi/package-variant-closed";
   import MdiFilter from "~icons/mdi/filter";
   import MdiClose from "~icons/mdi/close";
+  import MdiClock from "~icons/mdi/clock";
+  import MdiCheck from "~icons/mdi/check";
 
   import { Input } from "~/components/ui/input";
   import { Button } from "~/components/ui/button";
+  import { Badge } from "~/components/ui/badge";
 
   useHead({
     title: "HomeBoxNG | Plugins",
@@ -100,20 +103,29 @@
     },
   };
 
-  // Category display order and icons
-  const categoryOrder = ["Inventory & Data", "Integrations", "Communication", "Automation", "Tools"];
-
-  const categoryIcons: Record<string, Component> = {
-    "Inventory & Data": MdiChartBar,
-    Integrations: MdiHomeAutomation,
-    Communication: MdiBell,
-    Automation: MdiWrench,
-    Tools: MdiPrinter,
-  };
-
   // State
   const searchQuery = ref("");
-  const activeFilter = ref<"all" | "active" | "inactive" | "built-in">("all");
+  type FilterTab = "all" | "installed" | "recently-viewed" | "active" | "inactive";
+  const activeFilter = ref<FilterTab>("all");
+
+  // Recently viewed — persisted in localStorage
+  const RECENT_KEY = "homeboxng-recently-viewed-plugins";
+
+  function getRecentlyViewed(): string[] {
+    try {
+      return JSON.parse(localStorage.getItem(RECENT_KEY) || "[]");
+    } catch {
+      return [];
+    }
+  }
+
+  function trackPluginView(slug: string) {
+    const recent = getRecentlyViewed().filter(s => s !== slug);
+    recent.unshift(slug);
+    localStorage.setItem(RECENT_KEY, JSON.stringify(recent.slice(0, 20)));
+  }
+
+  const recentlyViewed = ref<string[]>(getRecentlyViewed());
 
   // Fetch plugin data from API
   interface PluginInfo {
@@ -139,61 +151,60 @@
     }
   });
 
-  // Computed: filtered plugins
+  // Computed: filtered plugins based on active tab
   const filteredPlugins = computed(() => {
     if (!plugins.value) return [];
 
-    return plugins.value.filter(plugin => {
-      const slug = plugin.info.name;
-      const meta = pluginMeta[slug];
+    let result = plugins.value;
 
-      // Search filter
-      if (searchQuery.value) {
-        const query = searchQuery.value.toLowerCase();
-        const matchesName = slug.toLowerCase().includes(query);
+    // Tab filter
+    switch (activeFilter.value) {
+      case "installed":
+        result = result.filter(p => p.info.builtIn || p.state === "running" || p.state === "stopped");
+        break;
+      case "recently-viewed":
+        result = result.filter(p => recentlyViewed.value.includes(p.info.name));
+        // Sort by recently viewed order
+        result.sort((a, b) => {
+          const ai = recentlyViewed.value.indexOf(a.info.name);
+          const bi = recentlyViewed.value.indexOf(b.info.name);
+          return ai - bi;
+        });
+        break;
+      case "active":
+        result = result.filter(p => p.state === "running");
+        break;
+      case "inactive":
+        result = result.filter(p => p.state !== "running");
+        break;
+    }
+
+    // Search filter
+    if (searchQuery.value) {
+      const query = searchQuery.value.toLowerCase();
+      result = result.filter(plugin => {
+        const slug = plugin.info.name;
+        const meta = pluginMeta[slug];
+        const matchesName = slug.toLowerCase().includes(query) ||
+          getPluginDisplayName(slug).toLowerCase().includes(query);
         const matchesDesc = (meta?.description || plugin.info.description || "").toLowerCase().includes(query);
         const matchesCategory = (meta?.category || "").toLowerCase().includes(query);
-        if (!matchesName && !matchesDesc && !matchesCategory) return false;
-      }
-
-      // Status filter
-      if (activeFilter.value === "active" && plugin.state !== "running") return false;
-      if (activeFilter.value === "inactive" && plugin.state === "running") return false;
-      if (activeFilter.value === "built-in" && !plugin.info.builtIn) return false;
-
-      return true;
-    });
-  });
-
-  // Computed: plugins grouped by category
-  const groupedPlugins = computed(() => {
-    const groups: Record<string, PluginStatus[]> = {};
-
-    for (const category of categoryOrder) {
-      groups[category] = [];
-    }
-    groups["Other"] = [];
-
-    for (const plugin of filteredPlugins.value) {
-      const meta = pluginMeta[plugin.info.name];
-      const category = meta?.category || "Other";
-      if (!groups[category]) {
-        groups[category] = [];
-      }
-      groups[category].push(plugin);
+        return matchesName || matchesDesc || matchesCategory;
+      });
     }
 
-    return groups;
-  });
-
-  // Computed: visible categories (non-empty)
-  const visibleCategories = computed(() => {
-    return [...categoryOrder, "Other"].filter(cat => (groupedPlugins.value[cat]?.length || 0) > 0);
+    return result;
   });
 
   // Stats
   const totalPlugins = computed(() => plugins.value?.length || 0);
   const activePlugins = computed(() => plugins.value?.filter(p => p.state === "running").length || 0);
+  const installedCount = computed(() => plugins.value?.filter(p => p.info.builtIn || p.state === "running" || p.state === "stopped").length || 0);
+  const recentCount = computed(() => {
+    if (!plugins.value) return 0;
+    return plugins.value.filter(p => recentlyViewed.value.includes(p.info.name)).length;
+  });
+  const inactiveCount = computed(() => plugins.value?.filter(p => p.state !== "running").length || 0);
 
   // Helpers
   function getPluginMeta(slug: string) {
@@ -212,14 +223,17 @@
   }
 
   function navigateToPlugin(slug: string) {
+    trackPluginView(slug);
+    recentlyViewed.value = getRecentlyViewed();
     navigateTo(`/plugins/${slug}`);
   }
 
-  const filterOptions = [
-    { key: "all" as const, label: "All" },
-    { key: "active" as const, label: "Active" },
-    { key: "inactive" as const, label: "Inactive" },
-    { key: "built-in" as const, label: "Built-in" },
+  const filterTabs: { key: FilterTab; label: string; icon?: Component; count?: () => number }[] = [
+    { key: "all", label: "All Plugins", count: () => totalPlugins.value },
+    { key: "installed", label: "Installed", icon: MdiCheck, count: () => installedCount.value },
+    { key: "recently-viewed", label: "Recently Viewed", icon: MdiClock, count: () => recentCount.value },
+    { key: "active", label: "Active", count: () => activePlugins.value },
+    { key: "inactive", label: "Inactive", count: () => inactiveCount.value },
   ];
 </script>
 
@@ -234,22 +248,51 @@
             <h1 class="text-2xl font-bold">Plugin Manager</h1>
           </div>
           <p class="mt-1 text-sm text-indigo-100">
-            {{ totalPlugins }} plugins loaded
+            {{ totalPlugins }} plugins available
             <span v-if="activePlugins > 0" class="ml-2 inline-flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-xs font-medium">
               {{ activePlugins }} active
             </span>
           </p>
         </div>
-        <div class="hidden text-right text-xs text-indigo-200 sm:block">
-          <p>HomeBoxNG Plugin System</p>
-          <p>v1.0.0</p>
+        <div class="hidden gap-2 sm:flex">
+          <NuxtLink to="/plugins/catalog">
+            <Button variant="secondary" size="sm" class="bg-white/20 text-white hover:bg-white/30">
+              <MdiBookOpenVariant class="mr-1 size-4" />
+              Browse Catalog
+            </Button>
+          </NuxtLink>
         </div>
       </div>
     </div>
 
-    <!-- Search + Filters -->
-    <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-      <div class="relative flex-1">
+    <!-- Tab Bar -->
+    <div class="mb-4 flex items-center gap-1 overflow-x-auto border-b border-border pb-0">
+      <button
+        v-for="tab in filterTabs"
+        :key="tab.key"
+        class="flex shrink-0 items-center gap-1.5 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors"
+        :class="
+          activeFilter === tab.key
+            ? 'border-primary text-primary'
+            : 'border-transparent text-muted-foreground hover:border-muted hover:text-foreground'
+        "
+        @click="activeFilter = tab.key"
+      >
+        <component :is="tab.icon" v-if="tab.icon" class="size-4" />
+        {{ tab.label }}
+        <Badge
+          v-if="tab.count"
+          :variant="activeFilter === tab.key ? 'default' : 'secondary'"
+          class="ml-0.5 h-5 min-w-[20px] px-1.5 text-[10px]"
+        >
+          {{ tab.count() }}
+        </Badge>
+      </button>
+    </div>
+
+    <!-- Search -->
+    <div class="mb-6">
+      <div class="relative">
         <MdiMagnify class="absolute left-3 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
         <Input
           v-model="searchQuery"
@@ -265,22 +308,6 @@
           <MdiClose class="size-4" />
         </button>
       </div>
-      <div class="flex items-center gap-1.5">
-        <MdiFilter class="size-4 text-muted-foreground" />
-        <button
-          v-for="option in filterOptions"
-          :key="option.key"
-          class="rounded-full px-3 py-1.5 text-xs font-medium transition-all duration-200"
-          :class="
-            activeFilter === option.key
-              ? 'bg-primary text-primary-foreground shadow-sm'
-              : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-          "
-          @click="activeFilter = option.key"
-        >
-          {{ option.label }}
-        </button>
-      </div>
     </div>
 
     <!-- Empty State -->
@@ -289,13 +316,23 @@
       class="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-muted py-16"
     >
       <MdiPuzzle class="mb-4 size-12 text-muted-foreground" />
-      <p class="text-lg font-medium text-muted-foreground">No plugins found</p>
+      <p class="text-lg font-medium text-muted-foreground">
+        <template v-if="activeFilter === 'recently-viewed'">
+          No recently viewed plugins
+        </template>
+        <template v-else>
+          No plugins found
+        </template>
+      </p>
       <p class="mt-1 text-sm text-muted-foreground">
         <template v-if="searchQuery">
           No plugins match "{{ searchQuery }}"
         </template>
+        <template v-else-if="activeFilter === 'recently-viewed'">
+          Visit a plugin page and it will appear here.
+        </template>
         <template v-else>
-          No plugins match the current filter
+          No plugins match the current filter.
         </template>
       </p>
       <Button
@@ -308,7 +345,7 @@
           activeFilter = 'all';
         "
       >
-        Clear filters
+        Show all plugins
       </Button>
     </div>
 
@@ -320,78 +357,65 @@
       </div>
     </div>
 
-    <!-- Category Sections -->
-    <div v-else class="space-y-8">
-      <section v-for="category in visibleCategories" :key="category">
-        <!-- Category Header -->
-        <div class="mb-4 flex items-center gap-2 border-b border-border pb-2">
-          <component
-            :is="categoryIcons[category] || MdiPuzzle"
-            class="size-5 text-primary"
-          />
-          <h2 class="text-lg font-semibold text-foreground">{{ category }}</h2>
-          <span class="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-            {{ groupedPlugins[category]?.length || 0 }}
-          </span>
-        </div>
-
-        <!-- Plugin Cards Grid -->
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          <div
-            v-for="plugin in groupedPlugins[category]"
-            :key="plugin.info.name"
-            class="group cursor-pointer rounded-xl border border-border bg-card p-4 shadow-sm transition-all duration-200 hover:border-primary/40 hover:shadow-md"
-            @click="navigateToPlugin(plugin.info.name)"
-          >
-            <!-- Card Header: Icon + Status -->
-            <div class="mb-3 flex items-start justify-between">
-              <div class="flex size-11 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary/20">
-                <component :is="getPluginMeta(plugin.info.name).icon" class="size-6" />
-              </div>
-              <div class="flex items-center gap-1.5">
-                <span
-                  class="size-2.5 rounded-full"
-                  :class="isPluginActive(plugin) ? 'bg-green-500' : 'bg-gray-400'"
-                />
-                <span class="text-xs text-muted-foreground">
-                  {{ isPluginActive(plugin) ? "Active" : "Inactive" }}
-                </span>
-              </div>
-            </div>
-
-            <!-- Card Body: Name + Description -->
-            <h3 class="mb-1 text-sm font-semibold text-foreground group-hover:text-primary">
-              {{ getPluginDisplayName(plugin.info.name) }}
-            </h3>
-            <p class="mb-3 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
-              {{ getPluginMeta(plugin.info.name).description || plugin.info.description }}
-            </p>
-
-            <!-- Card Footer: Version + Open Button -->
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <span
-                  v-if="plugin.info.builtIn"
-                  class="rounded bg-indigo-100 px-1.5 py-0.5 text-[10px] font-medium text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300"
-                >
-                  Built-in
-                </span>
-                <span class="text-[10px] text-muted-foreground">
-                  v{{ plugin.info.version }}
-                </span>
-              </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                class="h-7 px-2.5 text-xs opacity-0 transition-opacity group-hover:opacity-100"
-                @click.stop="navigateToPlugin(plugin.info.name)"
-              >
-                Open
-              </Button>
-            </div>
+    <!-- Plugin Cards Grid — All plugins flat (no category grouping) -->
+    <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div
+        v-for="plugin in filteredPlugins"
+        :key="plugin.info.name"
+        class="group cursor-pointer rounded-xl border border-border bg-card p-4 shadow-sm transition-all duration-200 hover:border-primary/40 hover:shadow-md"
+        @click="navigateToPlugin(plugin.info.name)"
+      >
+        <!-- Card Header: Icon + Status -->
+        <div class="mb-3 flex items-start justify-between">
+          <div class="flex size-11 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary/20">
+            <component :is="getPluginMeta(plugin.info.name).icon" class="size-6" />
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span
+              class="size-2.5 rounded-full"
+              :class="isPluginActive(plugin) ? 'bg-green-500' : 'bg-gray-400'"
+            />
+            <span class="text-xs text-muted-foreground">
+              {{ isPluginActive(plugin) ? "Active" : "Inactive" }}
+            </span>
           </div>
         </div>
-      </section>
+
+        <!-- Card Body: Name + Description -->
+        <h3 class="mb-1 text-sm font-semibold text-foreground group-hover:text-primary">
+          {{ getPluginDisplayName(plugin.info.name) }}
+        </h3>
+        <p class="mb-2 text-xs text-muted-foreground">
+          {{ getPluginMeta(plugin.info.name).category || "Other" }}
+        </p>
+        <p class="mb-3 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+          {{ getPluginMeta(plugin.info.name).description || plugin.info.description }}
+        </p>
+
+        <!-- Card Footer: Version + Badges -->
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <Badge
+              v-if="plugin.info.builtIn"
+              variant="secondary"
+              class="text-[10px]"
+            >
+              Built-in
+            </Badge>
+            <span class="text-[10px] text-muted-foreground">
+              v{{ plugin.info.version }}
+            </span>
+          </div>
+          <Button
+            size="sm"
+            variant="ghost"
+            class="h-7 px-2.5 text-xs opacity-0 transition-opacity group-hover:opacity-100"
+            @click.stop="navigateToPlugin(plugin.info.name)"
+          >
+            Open
+          </Button>
+        </div>
+      </div>
     </div>
   </div>
 </template>

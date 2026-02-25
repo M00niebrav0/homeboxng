@@ -17,7 +17,8 @@ export type WidgetType =
   | "quick-actions"
   | "activity-feed"
   | "value-by-location"
-  | "storage-map";
+  | "storage-map"
+  | "system-alerts";
 
 export const WIDGET_DEFINITIONS: Record<WidgetType, { title: string; description: string }> = {
   "quick-stats": { title: "Quick Stats", description: "Total items, value, locations, and tags" },
@@ -30,6 +31,7 @@ export const WIDGET_DEFINITIONS: Record<WidgetType, { title: string; description
   "activity-feed": { title: "Activity Feed", description: "Recent activity across the system" },
   "value-by-location": { title: "Value by Location", description: "Item value distribution by location" },
   "storage-map": { title: "Storage Map", description: "Visual tree of your location hierarchy" },
+  "system-alerts": { title: "System Alerts", description: "Critical and general warnings for tokens, plugins, and system health" },
 };
 
 const STORAGE_KEY = "homeboxng-dashboard-layout";
@@ -37,15 +39,16 @@ const STORAGE_KEY = "homeboxng-dashboard-layout";
 function getDefaultLayout(): WidgetConfig[] {
   return [
     { id: "w-1", type: "quick-stats", title: "Quick Stats", col: 0, row: 0, visible: true },
-    { id: "w-2", type: "recent-items", title: "Recent Items", col: 1, row: 0, visible: true },
+    { id: "w-2", type: "system-alerts", title: "System Alerts", col: 1, row: 0, visible: true },
     { id: "w-3", type: "quick-actions", title: "Quick Actions", col: 2, row: 0, visible: true },
-    { id: "w-4", type: "warranty-tracker", title: "Warranty Tracker", col: 0, row: 1, visible: true },
+    { id: "w-4", type: "recent-items", title: "Recent Items", col: 0, row: 1, visible: true },
     { id: "w-5", type: "activity-feed", title: "Activity Feed", col: 1, row: 1, visible: true },
     { id: "w-6", type: "value-by-location", title: "Value by Location", col: 2, row: 1, visible: true },
-    { id: "w-7", type: "low-stock", title: "Low Stock Alerts", col: 0, row: 2, visible: false },
-    { id: "w-8", type: "maintenance-due", title: "Maintenance Due", col: 1, row: 2, visible: false },
-    { id: "w-9", type: "plugin-status", title: "Plugin Status", col: 2, row: 2, visible: false },
-    { id: "w-10", type: "storage-map", title: "Storage Map", col: 0, row: 3, visible: false },
+    { id: "w-7", type: "warranty-tracker", title: "Warranty Tracker", col: 0, row: 2, visible: false },
+    { id: "w-8", type: "low-stock", title: "Low Stock Alerts", col: 1, row: 2, visible: false },
+    { id: "w-9", type: "maintenance-due", title: "Maintenance Due", col: 2, row: 2, visible: false },
+    { id: "w-10", type: "plugin-status", title: "Plugin Status", col: 0, row: 3, visible: false },
+    { id: "w-11", type: "storage-map", title: "Storage Map", col: 1, row: 3, visible: false },
   ];
 }
 

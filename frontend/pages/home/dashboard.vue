@@ -28,6 +28,8 @@
   import MdiChartBar from "~icons/mdi/chart-bar";
   import MdiFileTree from "~icons/mdi/file-tree";
   import MdiAlertCircle from "~icons/mdi/alert-circle";
+  import MdiAlertOctagon from "~icons/mdi/alert-octagon";
+  import MdiInformation from "~icons/mdi/information";
   import MdiBarcodeScan from "~icons/mdi/barcode-scan";
   import MdiFileImport from "~icons/mdi/file-import";
   import MdiFileExport from "~icons/mdi/file-export";
@@ -45,7 +47,14 @@
 
   const api = useUserApi();
   const router = useRouter();
-  const formatCurrency = await useFormatCurrency();
+
+  // Non-blocking currency formatter — provides default until async load completes
+  const _currencyFn = ref<((val: number) => string) | null>(null);
+  useFormatCurrency().then(fn => { _currencyFn.value = fn; }).catch(() => {});
+  function formatCurrency(val: number): string {
+    if (_currencyFn.value) return _currencyFn.value(val);
+    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(val);
+  }
 
   const {
     visibleWidgets,
@@ -75,6 +84,8 @@
     activityLoading,
     warrantyAlerts,
     warrantyLoading,
+    systemAlerts,
+    systemAlertsLoading,
     valueByLocation,
     valueByLocationLoading,
     refreshAll,
@@ -170,6 +181,35 @@
       default: return "secondary";
     }
   }
+
+  // ---- System Alerts helpers ----
+  function alertSeverityIcon(severity: string) {
+    if (severity === "critical") return MdiAlertOctagon;
+    if (severity === "warning") return MdiAlertCircle;
+    return MdiInformation;
+  }
+
+  function alertSeverityColor(severity: string): string {
+    if (severity === "critical") return "text-red-500";
+    if (severity === "warning") return "text-amber-500";
+    return "text-blue-500";
+  }
+
+  function alertBadgeVariant(severity: string): "destructive" | "default" | "secondary" | "outline" {
+    if (severity === "critical") return "destructive";
+    if (severity === "warning") return "default";
+    return "secondary";
+  }
+
+  function alertBorderColor(severity: string): string {
+    if (severity === "critical") return "border-l-red-500 bg-red-500/5";
+    if (severity === "warning") return "border-l-amber-500 bg-amber-500/5";
+    return "border-l-blue-500 bg-blue-500/5";
+  }
+
+  const criticalAlerts = computed(() => systemAlerts.value.filter(a => a.severity === "critical"));
+  const warningAlerts = computed(() => systemAlerts.value.filter(a => a.severity === "warning"));
+  const infoAlerts = computed(() => systemAlerts.value.filter(a => a.severity === "info"));
 
   // ---- Low stock (computed from items with quantity info) ----
   const lowStockItems = computed(() => {
@@ -395,6 +435,74 @@
                   <span class="text-xl font-bold">{{ dashboardStats.totalTags }}</span>
                   <span class="text-xs text-muted-foreground">Tags</span>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <!-- System Alerts Widget -->
+          <Card v-else-if="widget.type === 'system-alerts'" class="overflow-hidden shadow">
+            <CardHeader class="pb-2">
+              <CardTitle class="flex items-center gap-2 text-base">
+                <MdiAlertOctagon class="size-5 text-red-500" />
+                System Alerts
+                <Badge
+                  v-if="criticalAlerts.length > 0"
+                  variant="destructive"
+                  class="ml-auto text-[10px]"
+                >
+                  {{ criticalAlerts.length }} Critical
+                </Badge>
+                <Badge
+                  v-if="warningAlerts.length > 0"
+                  variant="default"
+                  class="text-[10px]"
+                >
+                  {{ warningAlerts.length }} Warning
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div v-if="systemAlertsLoading" class="space-y-2">
+                <Skeleton v-for="i in 3" :key="i" class="h-14 rounded" />
+              </div>
+              <div v-else-if="systemAlerts.length === 0" class="py-4 text-center">
+                <MdiShieldCheck class="mx-auto mb-2 size-8 text-green-500" />
+                <p class="text-sm font-medium text-green-600">All systems healthy</p>
+                <p class="mt-0.5 text-xs text-muted-foreground">No alerts at this time</p>
+              </div>
+              <div v-else class="max-h-72 space-y-2 overflow-y-auto">
+                <button
+                  v-for="alert in [...criticalAlerts, ...warningAlerts, ...infoAlerts]"
+                  :key="alert.id"
+                  class="flex w-full items-start gap-3 rounded-lg border-l-4 p-3 text-left transition-colors hover:bg-muted/50"
+                  :class="alertBorderColor(alert.severity)"
+                  @click="alert.actionUrl ? goTo(alert.actionUrl) : undefined"
+                >
+                  <component
+                    :is="alertSeverityIcon(alert.severity)"
+                    class="mt-0.5 size-5 shrink-0"
+                    :class="alertSeverityColor(alert.severity)"
+                  />
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-2">
+                      <p class="text-sm font-medium">{{ alert.title }}</p>
+                      <Badge :variant="alertBadgeVariant(alert.severity)" class="shrink-0 text-[10px]">
+                        {{ alert.severity }}
+                      </Badge>
+                    </div>
+                    <p class="mt-0.5 text-xs text-muted-foreground">{{ alert.description }}</p>
+                    <div class="mt-1 flex items-center gap-3 text-[10px] text-muted-foreground">
+                      <span class="rounded bg-muted px-1.5 py-0.5">{{ alert.category }}</span>
+                      <span v-if="alert.daysLeft !== undefined && alert.daysLeft !== 0">
+                        {{ alert.daysLeft > 0 ? alert.daysLeft + 'd remaining' : Math.abs(alert.daysLeft) + 'd overdue' }}
+                      </span>
+                    </div>
+                  </div>
+                  <MdiArrowRight
+                    v-if="alert.actionUrl"
+                    class="mt-1 size-4 shrink-0 text-muted-foreground"
+                  />
+                </button>
               </div>
             </CardContent>
           </Card>

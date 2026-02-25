@@ -76,44 +76,20 @@
     isCurrent: boolean;
   }
 
-  const sessions = ref<SessionInfo[]>([
-    {
-      id: "sess-active-1",
-      device: "Windows Desktop",
-      browser: "Chrome 122",
-      ip: "192.168.1.15",
-      lastActive: "Just now",
-      created: "2026-02-20 09:14",
-      isCurrent: true,
-    },
-    {
-      id: "sess-active-2",
-      device: "Linux Server",
-      browser: "Firefox 124",
-      ip: "192.168.1.249",
-      lastActive: "2 hours ago",
-      created: "2026-02-18 14:30",
-      isCurrent: false,
-    },
-    {
-      id: "sess-active-3",
-      device: "iPhone 15",
-      browser: "Safari Mobile",
-      ip: "10.0.0.42",
-      lastActive: "6 hours ago",
-      created: "2026-02-15 08:00",
-      isCurrent: false,
-    },
-    {
-      id: "sess-active-4",
-      device: "Android Tablet",
-      browser: "Chrome Mobile",
-      ip: "192.168.1.100",
-      lastActive: "1 day ago",
-      created: "2026-02-10 20:15",
-      isCurrent: false,
-    },
-  ]);
+  const sessions = ref<SessionInfo[]>([]);
+  const sessionsLoading = ref(true);
+
+  // Attempt to load real sessions from API, fall back to empty state
+  onMounted(async () => {
+    try {
+      const { data } = await api.plugins.getSessions();
+      if (data) sessions.value = data as SessionInfo[];
+    } catch {
+      // Backend doesn't have sessions endpoint yet — show empty state
+    } finally {
+      sessionsLoading.value = false;
+    }
+  });
 
   const showRevokeAllDialog = ref(false);
 
@@ -138,18 +114,20 @@
     method: string;
   }
 
-  const loginHistory = ref<LoginEntry[]>([
-    { id: "l1", timestamp: "2026-02-24 08:30:22", ip: "192.168.1.15", status: "success", device: "Chrome on Windows", method: "Password" },
-    { id: "l2", timestamp: "2026-02-24 08:29:58", ip: "192.168.1.15", status: "failed", device: "Chrome on Windows", method: "Password" },
-    { id: "l3", timestamp: "2026-02-23 19:45:10", ip: "10.0.0.42", status: "success", device: "Safari on iPhone", method: "Password" },
-    { id: "l4", timestamp: "2026-02-23 14:22:05", ip: "192.168.1.249", status: "success", device: "Firefox on Linux", method: "API Token" },
-    { id: "l5", timestamp: "2026-02-22 09:10:33", ip: "45.33.32.156", status: "failed", device: "Unknown", method: "Password" },
-    { id: "l6", timestamp: "2026-02-22 09:10:28", ip: "45.33.32.156", status: "failed", device: "Unknown", method: "Password" },
-    { id: "l7", timestamp: "2026-02-22 09:10:15", ip: "45.33.32.156", status: "failed", device: "Unknown", method: "Password" },
-    { id: "l8", timestamp: "2026-02-21 20:00:00", ip: "192.168.1.15", status: "success", device: "Chrome on Windows", method: "Password" },
-    { id: "l9", timestamp: "2026-02-21 11:30:45", ip: "192.168.1.100", status: "success", device: "Chrome on Android", method: "Password" },
-    { id: "l10", timestamp: "2026-02-20 16:00:12", ip: "192.168.1.15", status: "success", device: "Chrome on Windows", method: "OIDC" },
-  ]);
+  const loginHistory = ref<LoginEntry[]>([]);
+  const loginHistoryLoading = ref(true);
+
+  // Load real login history from API (falls back to empty state)
+  onMounted(async () => {
+    try {
+      const { data } = await api.plugins.getLoginHistory(1, 100);
+      if (data) loginHistory.value = data as LoginEntry[];
+    } catch {
+      // Backend doesn't have login history endpoint yet
+    } finally {
+      loginHistoryLoading.value = false;
+    }
+  });
 
   const loginStatusFilter = ref("all");
   const loginPage = ref(1);
@@ -549,7 +527,14 @@
             </Button>
           </div>
 
-          <div class="overflow-x-auto">
+          <div v-if="sessionsLoading" class="py-8 text-center text-sm text-muted-foreground">
+            <MdiLoading class="mx-auto mb-2 size-5 animate-spin" />
+            Loading sessions...
+          </div>
+          <div v-else-if="sessions.length === 0" class="py-8 text-center text-sm text-muted-foreground">
+            No active sessions found. Session tracking is not yet available.
+          </div>
+          <div v-else class="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -626,7 +611,14 @@
             </span>
           </div>
 
-          <div class="overflow-x-auto">
+          <div v-if="loginHistoryLoading" class="py-8 text-center text-sm text-muted-foreground">
+            <MdiLoading class="mx-auto mb-2 size-5 animate-spin" />
+            Loading login history...
+          </div>
+          <div v-else-if="loginHistory.length === 0" class="py-8 text-center text-sm text-muted-foreground">
+            No login history available. Login tracking is not yet available.
+          </div>
+          <div v-else class="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>

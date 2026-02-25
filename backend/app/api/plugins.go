@@ -29,7 +29,7 @@ import (
 func registerBuiltinPlugins(app *app) {
 	// Register example plugin (developer reference)
 	if err := app.pluginRegistry.Register(example.New()); err != nil {
-		log.Warn().Err(err).Msg("failed to register example plugin")
+		log.Error().Err(err).Msg("failed to register example plugin")
 	}
 
 	// =========================================================================
@@ -53,7 +53,7 @@ func registerBuiltinPlugins(app *app) {
 
 	for _, np := range notificationPlugins {
 		if err := app.pluginRegistry.Register(np); err != nil {
-			log.Warn().Err(err).Str("plugin", np.Info().Name).Msg("failed to register notification plugin")
+			log.Error().Err(err).Str("plugin", np.Info().Name).Msg("failed to register notification plugin")
 			continue
 		}
 		// Also register with the notification dispatcher for routing
@@ -69,7 +69,7 @@ func registerBuiltinPlugins(app *app) {
 	//
 	// Two-step pipeline: Ollama/Qwen3-VL for vision -> Gemini for verification
 	if err := app.pluginRegistry.Register(aivision.New()); err != nil {
-		log.Warn().Err(err).Msg("failed to register ai-vision plugin")
+		log.Error().Err(err).Msg("failed to register ai-vision plugin")
 	}
 
 	// =========================================================================
@@ -77,7 +77,7 @@ func registerBuiltinPlugins(app *app) {
 	//
 	// Brother QL thermal labels with QR codes, smart presets, half-label support
 	if err := app.pluginRegistry.Register(labelprinter.New()); err != nil {
-		log.Warn().Err(err).Msg("failed to register label-printer plugin")
+		log.Error().Err(err).Msg("failed to register label-printer plugin")
 	}
 
 	// =========================================================================
@@ -85,7 +85,7 @@ func registerBuiltinPlugins(app *app) {
 	//
 	// WiFi SD card receiver with SOAP protocol for wireless camera uploads
 	if err := app.pluginRegistry.Register(eyefi.New()); err != nil {
-		log.Warn().Err(err).Msg("failed to register eyefi plugin")
+		log.Error().Err(err).Msg("failed to register eyefi plugin")
 	}
 
 	// =========================================================================
@@ -93,7 +93,7 @@ func registerBuiltinPlugins(app *app) {
 	//
 	// CSV/Excel export and import for items, locations, and labels
 	if err := app.pluginRegistry.Register(excelexport.New()); err != nil {
-		log.Warn().Err(err).Msg("failed to register excel-export plugin")
+		log.Error().Err(err).Msg("failed to register excel-export plugin")
 	}
 
 	// =========================================================================
@@ -101,7 +101,7 @@ func registerBuiltinPlugins(app *app) {
 	//
 	// Bidirectional document-item linking with Paperless-ngx
 	if err := app.pluginRegistry.Register(paperless.New()); err != nil {
-		log.Warn().Err(err).Msg("failed to register paperless plugin")
+		log.Error().Err(err).Msg("failed to register paperless plugin")
 	}
 
 	// =========================================================================
@@ -109,7 +109,7 @@ func registerBuiltinPlugins(app *app) {
 	//
 	// Dashboard metrics, activity feeds, value tracking, category breakdowns
 	if err := app.pluginRegistry.Register(analytics.New()); err != nil {
-		log.Warn().Err(err).Msg("failed to register analytics plugin")
+		log.Error().Err(err).Msg("failed to register analytics plugin")
 	}
 
 	// =========================================================================
@@ -117,25 +117,25 @@ func registerBuiltinPlugins(app *app) {
 	//
 	// MQTT Discovery for HA entities, bidirectional sync, QR scan events
 	if err := app.pluginRegistry.Register(habridge.New()); err != nil {
-		log.Warn().Err(err).Msg("failed to register ha-bridge plugin")
+		log.Error().Err(err).Msg("failed to register ha-bridge plugin")
 	}
 
 	// =========================================================================
 	// Lending Plugin - Item checkout and return tracking
 	if err := app.pluginRegistry.Register(lending.New()); err != nil {
-		log.Warn().Err(err).Msg("failed to register lending plugin")
+		log.Error().Err(err).Msg("failed to register lending plugin")
 	}
 
 	// =========================================================================
 	// Maintenance Plugin - Scheduled maintenance and repair logging
 	if err := app.pluginRegistry.Register(maintenance.New()); err != nil {
-		log.Warn().Err(err).Msg("failed to register maintenance plugin")
+		log.Error().Err(err).Msg("failed to register maintenance plugin")
 	}
 
 	// =========================================================================
 	// Shopping Plugin - Shopping list with reorder triggers
 	if err := app.pluginRegistry.Register(shopping.New()); err != nil {
-		log.Warn().Err(err).Msg("failed to register shopping plugin")
+		log.Error().Err(err).Msg("failed to register shopping plugin")
 	}
 
 	// Planned built-in plugins (registered as they are implemented):

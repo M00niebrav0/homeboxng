@@ -2,7 +2,35 @@
   import BaseContainer from "@/components/Base/Container.vue";
   import BaseCard from "@/components/Base/Card.vue";
   import Subtitle from "~/components/global/Subtitle.vue";
+  import { Button } from "@/components/ui/button";
+  import { Badge } from "@/components/ui/badge";
+  import { Input } from "@/components/ui/input";
+  import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+  } from "@/components/ui/table";
+  import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+  } from "@/components/ui/dialog";
+  import { Label } from "@/components/ui/label";
+  import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+  } from "@/components/ui/select";
   import type { PluginConfig } from "~/lib/api/classes/plugins";
+  import MdiLoading from "~icons/mdi/loading";
 
   definePageMeta({
     middleware: ["auth"],
@@ -15,15 +43,19 @@
 
   // Plugin configuration
   const { data: pluginConfig } = useAsyncData("ai-vision-config", async () => {
-    const { data } = await api.plugins.getConfig("ai-vision");
-    return data || [];
+    try {
+      const { data } = await api.plugins.getConfig("ai-vision");
+      return data || [];
+    } catch {
+      return [];
+    }
   });
 
   const configValues = ref<Record<string, string>>({});
 
   watch(pluginConfig, (cfg) => {
     if (!cfg) return;
-    for (const field of cfg) {
+    for (const field of cfg as PluginConfig[]) {
       configValues.value[field.key] = field.value || field.default || "";
     }
   }, { immediate: true });
@@ -54,13 +86,17 @@
 
   // Load recent scans
   const { data: recentScansData } = useAsyncData("ai-vision-recent", async () => {
-    const { data } = await api.http.get<ScanResult[]>({ url: "/api/v1/plugins/ai-vision/scans" });
-    return data;
+    try {
+      const { data } = await api.http.get<ScanResult[]>({ url: "/api/v1/plugins/ai-vision/scans" });
+      return data;
+    } catch {
+      return [];
+    }
   });
 
   watch(recentScansData, (data) => {
     if (data) {
-      recentScans.value = data;
+      recentScans.value = data as ScanResult[];
     }
   }, { immediate: true });
 
@@ -101,6 +137,7 @@
           method: "POST",
           body: formData,
         });
+        if (!response.ok) throw new Error("Scan failed");
         const result = await response.json();
         scanResults.value.push({
           id: result.id || crypto.randomUUID(),
@@ -147,10 +184,22 @@
     scanResults.value = scanResults.value.filter(r => r.id !== result.id);
   }
 
-  function confidenceColor(confidence: number): string {
-    if (confidence >= 0.8) return "bg-success";
-    if (confidence >= 0.5) return "bg-warning";
-    return "bg-error";
+  function confidenceBadgeVariant(confidence: number): "default" | "destructive" | "secondary" {
+    if (confidence >= 0.8) return "default";
+    if (confidence >= 0.5) return "secondary";
+    return "destructive";
+  }
+
+  function confidenceBarColor(confidence: number): string {
+    if (confidence >= 0.8) return "bg-green-500";
+    if (confidence >= 0.5) return "bg-yellow-500";
+    return "bg-red-500";
+  }
+
+  function statusBadgeVariant(status: string): "default" | "destructive" | "secondary" {
+    if (status === "complete") return "default";
+    if (status === "error") return "destructive";
+    return "secondary";
   }
 
   function formatTimestamp(ts: string): string {
@@ -165,17 +214,19 @@
       <div class="flex items-center justify-between">
         <div>
           <h1 class="text-2xl font-bold">AI Vision</h1>
-          <p class="text-sm opacity-70">
+          <p class="text-sm text-muted-foreground">
             Identify inventory items from photos using AI image recognition.
           </p>
         </div>
         <div class="flex gap-2">
-          <NuxtLink to="/plugins" class="btn btn-sm btn-outline">
-            Back to Plugins
+          <NuxtLink to="/plugins">
+            <Button variant="outline" size="sm">
+              Back to Plugins
+            </Button>
           </NuxtLink>
-          <button class="btn btn-sm btn-ghost" @click="showConfigModal = true">
+          <Button variant="ghost" size="sm" @click="showConfigModal = true">
             Configure
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -183,10 +234,10 @@
       <section>
         <Subtitle>Upload Photos</Subtitle>
         <div
-          class="border-2 border-dashed rounded-lg p-12 text-center transition-colors cursor-pointer"
+          class="cursor-pointer rounded-lg border-2 border-dashed p-12 text-center transition-colors"
           :class="{
             'border-primary bg-primary/5': isDragging,
-            'border-base-300 hover:border-primary/50': !isDragging,
+            'border-border hover:border-primary/50': !isDragging,
           }"
           @dragover="onDragOver"
           @dragleave="onDragLeave"
@@ -202,15 +253,15 @@
             @change="onFileSelect"
           />
           <div v-if="uploading" class="flex flex-col items-center gap-2">
-            <span class="loading loading-spinner loading-lg text-primary" />
-            <p class="text-sm opacity-70">Analyzing images...</p>
+            <MdiLoading class="size-8 animate-spin text-primary" />
+            <p class="text-sm text-muted-foreground">Analyzing images...</p>
           </div>
           <div v-else class="flex flex-col items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" class="size-12 text-muted-foreground/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
             <p class="font-medium">Drop photos here or click to browse</p>
-            <p class="text-xs opacity-50">Supports JPG, PNG, WebP. Multiple files allowed.</p>
+            <p class="text-xs text-muted-foreground">Supports JPG, PNG, WebP. Multiple files allowed.</p>
           </div>
         </div>
       </section>
@@ -222,7 +273,7 @@
           <BaseCard v-for="result in scanResults" :key="result.id">
             <div class="p-4">
               <!-- Thumbnail -->
-              <div class="aspect-square w-full overflow-hidden rounded-lg bg-base-200 mb-3">
+              <div class="mb-3 aspect-square w-full overflow-hidden rounded-lg bg-muted">
                 <img
                   :src="result.thumbnailUrl"
                   :alt="result.filename"
@@ -233,54 +284,50 @@
               <!-- Result Info -->
               <div class="space-y-2">
                 <div class="flex items-center justify-between">
-                  <h3 class="font-semibold truncate">{{ result.itemName }}</h3>
-                  <span
-                    class="badge badge-xs"
-                    :class="{
-                      'badge-success': result.status === 'complete',
-                      'badge-error': result.status === 'error',
-                      'badge-warning': result.status === 'pending',
-                    }"
-                  >
+                  <h3 class="truncate font-semibold">{{ result.itemName }}</h3>
+                  <Badge :variant="statusBadgeVariant(result.status)">
                     {{ result.status }}
-                  </span>
+                  </Badge>
                 </div>
 
                 <!-- Confidence Bar -->
                 <div>
-                  <div class="flex justify-between text-xs opacity-60 mb-1">
+                  <div class="mb-1 flex justify-between text-xs text-muted-foreground">
                     <span>Confidence</span>
                     <span>{{ (result.confidence * 100).toFixed(0) }}%</span>
                   </div>
-                  <div class="w-full bg-base-200 rounded-full h-2">
+                  <div class="h-2 w-full rounded-full bg-muted">
                     <div
                       class="h-2 rounded-full transition-all"
-                      :class="confidenceColor(result.confidence)"
+                      :class="confidenceBarColor(result.confidence)"
                       :style="{ width: `${result.confidence * 100}%` }"
                     />
                   </div>
                 </div>
 
-                <p class="text-xs opacity-60">
+                <p class="text-xs text-muted-foreground">
                   Location: <span class="font-medium">{{ result.suggestedLocation }}</span>
                 </p>
 
                 <!-- Actions -->
                 <div class="flex gap-2 pt-2">
-                  <button
-                    class="btn btn-xs btn-primary flex-1"
+                  <Button
+                    size="sm"
+                    class="flex-1"
                     :disabled="result.status === 'error'"
                     @click="matchItem(result)"
                   >
                     Match Existing
-                  </button>
-                  <button
-                    class="btn btn-xs btn-success flex-1"
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    class="flex-1"
                     :disabled="result.status === 'error'"
                     @click="createItem(result)"
                   >
                     Create New
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -291,113 +338,120 @@
       <!-- Recent Scans -->
       <section>
         <Subtitle>Recent Scans</Subtitle>
-        <div v-if="recentScans.length === 0" class="text-center py-8 opacity-50">
+        <div v-if="recentScans.length === 0" class="py-8 text-center text-muted-foreground">
           <p>No recent scans. Upload a photo to get started.</p>
         </div>
         <div v-else class="overflow-x-auto">
-          <table class="table table-sm w-full">
-            <thead>
-              <tr>
-                <th>Image</th>
-                <th>Identified Item</th>
-                <th>Confidence</th>
-                <th>Location</th>
-                <th>Timestamp</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="scan in recentScans" :key="scan.id">
-                <td>
-                  <div class="w-10 h-10 rounded overflow-hidden bg-base-200">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Image</TableHead>
+                <TableHead>Identified Item</TableHead>
+                <TableHead>Confidence</TableHead>
+                <TableHead>Location</TableHead>
+                <TableHead>Timestamp</TableHead>
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow v-for="scan in recentScans" :key="scan.id">
+                <TableCell>
+                  <div class="size-10 overflow-hidden rounded bg-muted">
                     <img
                       :src="scan.thumbnailUrl"
                       :alt="scan.filename"
                       class="h-full w-full object-cover"
                     />
                   </div>
-                </td>
-                <td class="font-medium">{{ scan.itemName }}</td>
-                <td>
+                </TableCell>
+                <TableCell class="font-medium">{{ scan.itemName }}</TableCell>
+                <TableCell>
                   <div class="flex items-center gap-2">
-                    <div class="w-16 bg-base-200 rounded-full h-1.5">
+                    <div class="h-1.5 w-16 rounded-full bg-muted">
                       <div
                         class="h-1.5 rounded-full"
-                        :class="confidenceColor(scan.confidence)"
+                        :class="confidenceBarColor(scan.confidence)"
                         :style="{ width: `${scan.confidence * 100}%` }"
                       />
                     </div>
                     <span class="text-xs">{{ (scan.confidence * 100).toFixed(0) }}%</span>
                   </div>
-                </td>
-                <td>{{ scan.suggestedLocation }}</td>
-                <td class="text-xs opacity-60">{{ formatTimestamp(scan.timestamp) }}</td>
-                <td>
-                  <span
-                    class="badge badge-xs"
-                    :class="{
-                      'badge-success': scan.status === 'complete',
-                      'badge-error': scan.status === 'error',
-                    }"
-                  >
+                </TableCell>
+                <TableCell>{{ scan.suggestedLocation }}</TableCell>
+                <TableCell class="text-xs text-muted-foreground">{{ formatTimestamp(scan.timestamp) }}</TableCell>
+                <TableCell>
+                  <Badge :variant="statusBadgeVariant(scan.status)">
                     {{ scan.status }}
-                  </span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                  </Badge>
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
         </div>
       </section>
     </BaseContainer>
 
-    <!-- Configuration Modal -->
-    <dialog class="modal" :class="{ 'modal-open': showConfigModal }">
-      <div class="modal-box max-w-lg">
-        <h3 class="font-bold text-lg">AI Vision - Configuration</h3>
-        <div class="py-4 space-y-4">
-          <div v-for="field in pluginConfig" :key="field.key" class="form-control">
-            <label class="label">
-              <span class="label-text font-medium">{{ field.label }}</span>
-              <span v-if="field.required" class="label-text-alt text-error">Required</span>
-            </label>
-            <p class="text-xs opacity-60 mb-1">{{ field.description }}</p>
+    <!-- Configuration Dialog -->
+    <Dialog v-model:open="showConfigModal">
+      <DialogContent class="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>AI Vision - Configuration</DialogTitle>
+          <DialogDescription>Configure the AI vision model and scanning settings.</DialogDescription>
+        </DialogHeader>
+        <div class="space-y-4 py-4">
+          <div v-for="field in (pluginConfig as PluginConfig[] || [])" :key="field.key" class="space-y-1.5">
+            <Label class="font-medium">
+              {{ field.label }}
+              <span v-if="field.required" class="ml-0.5 text-destructive">*</span>
+            </Label>
+            <p class="text-xs text-muted-foreground">{{ field.description }}</p>
 
-            <select
+            <Select
               v-if="field.type === 'select'"
               v-model="configValues[field.key]"
-              class="select select-bordered select-sm w-full"
             >
-              <option v-for="opt in field.options" :key="opt" :value="opt">{{ opt }}</option>
-            </select>
+              <SelectTrigger>
+                <SelectValue :placeholder="field.default || 'Select...'" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="opt in field.options" :key="opt" :value="opt">{{ opt }}</SelectItem>
+              </SelectContent>
+            </Select>
 
-            <input
-              v-else-if="field.type === 'boolean'"
-              v-model="configValues[field.key]"
-              type="checkbox"
-              class="toggle toggle-primary"
-              true-value="true"
-              false-value="false"
-            />
+            <div v-else-if="field.type === 'boolean'" class="flex items-center gap-2 py-1">
+              <button
+                type="button"
+                role="switch"
+                :aria-checked="configValues[field.key] === 'true'"
+                class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                :class="configValues[field.key] === 'true' ? 'bg-primary' : 'bg-muted'"
+                @click="configValues[field.key] = configValues[field.key] === 'true' ? 'false' : 'true'"
+              >
+                <span
+                  class="pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform"
+                  :class="configValues[field.key] === 'true' ? 'translate-x-4' : 'translate-x-0'"
+                />
+              </button>
+              <span class="text-sm text-muted-foreground">{{ configValues[field.key] === 'true' ? 'Enabled' : 'Disabled' }}</span>
+            </div>
 
-            <input
+            <Input
               v-else
               v-model="configValues[field.key]"
               :type="field.type === 'secret' ? 'password' : field.type === 'number' ? 'number' : 'text'"
               :placeholder="field.default"
-              class="input input-bordered input-sm w-full"
             />
           </div>
 
-          <div v-if="!pluginConfig || pluginConfig.length === 0" class="text-center py-4 opacity-50">
+          <div v-if="!pluginConfig || (pluginConfig as PluginConfig[]).length === 0" class="py-4 text-center text-muted-foreground">
             <p>No configuration options available.</p>
           </div>
         </div>
-        <div class="modal-action">
-          <button class="btn btn-sm" @click="showConfigModal = false">Cancel</button>
-          <button class="btn btn-sm btn-primary" @click="saveConfig">Save</button>
-        </div>
-      </div>
-      <div class="modal-backdrop" @click="showConfigModal = false" />
-    </dialog>
+        <DialogFooter>
+          <Button variant="outline" @click="showConfigModal = false">Cancel</Button>
+          <Button @click="saveConfig">Save</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>

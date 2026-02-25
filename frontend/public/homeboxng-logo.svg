@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 160" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 160" fill="none">
   <defs>
     <linearGradient id="lg-primary" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
@@ -14,8 +14,8 @@
     </linearGradient>
   </defs>
 
-  <!-- Icon: Box mark (scaled to fit ~140x140 within 160 height) -->
-  <g transform="translate(10, 8) scale(0.28)">
+  <!-- Icon: Box mark (scaled up for better proportions) -->
+  <g transform="translate(8, 6) scale(0.30)">
     <!-- Box body - top face -->
     <path d="M256 80 L416 170 L256 260 L96 170 Z" fill="url(#lg-accent)" />
     <!-- Box body - left face -->
@@ -35,8 +35,8 @@
     <path d="M96 170 L256 260 L416 170" stroke="#ffffff" stroke-width="1.5" opacity="0.2" fill="none" />
   </g>
 
-  <!-- Text: "HomeBoxNG" -->
-  <g transform="translate(160, 0)">
+  <!-- Text: "HomeBoxNG" — tightened gap to icon -->
+  <g transform="translate(140, 0)">
     <!-- "HomeBox" in primary gradient -->
     <text y="105" font-family="Inter, system-ui, -apple-system, sans-serif" font-weight="700" font-size="72" fill="#6366f1" letter-spacing="-2">HomeBox</text>
     <!-- "NG" in darker accent -->

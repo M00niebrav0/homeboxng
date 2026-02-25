@@ -1,7 +1,9 @@
 package v1
 
 import (
+	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/hay-kot/httpkit/errchain"
@@ -516,6 +518,128 @@ func (ctrl *V1Controller) HandlePluginLogs() errchain.HandlerFunc {
 			logs = []plugins.LogEntry{}
 		}
 		return server.JSON(w, http.StatusOK, logs)
+	}
+}
+
+// HandleSystemAlerts godoc
+//
+//	@Summary	Get System Alerts
+//	@Tags		Plugins
+//	@Produce	json
+//	@Success	200	{array}	object
+//	@Router		/v1/plugins/system-alerts [GET]
+//	@Security	Bearer
+func (ctrl *V1Controller) HandleSystemAlerts() errchain.HandlerFunc {
+	type systemAlert struct {
+		ID          string `json:"id"`
+		Severity    string `json:"severity"`    // "critical", "warning", "info"
+		Category    string `json:"category"`    // "token", "warranty", "maintenance", "plugin", "system"
+		Title       string `json:"title"`
+		Description string `json:"description"`
+		ItemID      string `json:"itemId,omitempty"`
+		DaysLeft    int    `json:"daysLeft,omitempty"`
+		ActionURL   string `json:"actionUrl,omitempty"`
+		Timestamp   string `json:"timestamp"`
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) error {
+		alerts := make([]systemAlert, 0)
+		now := time.Now()
+
+		if ctrl.pluginRegistry != nil {
+			for _, status := range ctrl.pluginRegistry.List() {
+				name := status.Info.Name
+
+				// Check plugin state for errors
+				if status.State == plugins.StateError {
+					alerts = append(alerts, systemAlert{
+						ID:          "plugin-error-" + name,
+						Severity:    "critical",
+						Category:    "plugin",
+						Title:       name + " Plugin Error",
+						Description: "Plugin is in error state: " + status.Error,
+						ActionURL:   "/plugins/" + name,
+						Timestamp:   now.Format(time.RFC3339),
+					})
+				}
+
+				// Check config fields for secret/token fields with expiration companions
+				schema, err := ctrl.pluginRegistry.GetConfigSchema(name)
+				if err != nil {
+					continue
+				}
+
+				// Build a map of field keys for lookup and collect env var values
+				fieldMap := make(map[string]plugins.ConfigField)
+				for _, f := range schema {
+					fieldMap[f.Key] = f
+				}
+
+				for _, field := range schema {
+					if field.Type != "secret" {
+						continue
+					}
+
+					// Convention: a companion field named key + "_expires" (type: date)
+					// indicates when this token expires. Check env var or default.
+					expiresKey := field.Key + "_expires"
+					expiresField, hasCompanion := fieldMap[expiresKey]
+					if !hasCompanion {
+						continue
+					}
+
+					// Try env var first, then default
+					expiresStr := ""
+					if expiresField.EnvVar != "" {
+						expiresStr = os.Getenv(expiresField.EnvVar)
+					}
+					if expiresStr == "" {
+						expiresStr = expiresField.Default
+					}
+					if expiresStr == "" {
+						continue
+					}
+
+					expiresDate, parseErr := time.Parse("2006-01-02", expiresStr)
+					if parseErr != nil {
+						continue
+					}
+
+					daysLeft := int(time.Until(expiresDate).Hours() / 24)
+					if daysLeft > 90 {
+						continue
+					}
+
+					severity := "warning" // 30-90 days = general warning
+					if daysLeft < 30 {
+						severity = "critical" // < 30 days = critical
+					}
+
+					daysDesc := "today"
+					if daysLeft == 1 {
+						daysDesc = "in 1 day"
+					} else if daysLeft > 1 {
+						daysDesc = fmt.Sprintf("in %d days", daysLeft)
+					} else if daysLeft < 0 {
+						severity = "critical"
+						daysDesc = fmt.Sprintf("%d days ago", -daysLeft)
+					}
+
+					alerts = append(alerts, systemAlert{
+						ID:          "token-" + name + "-" + field.Key,
+						Severity:    severity,
+						Category:    "token",
+						Title:       field.Label + " Expiring",
+						Description: name + " " + field.Label + " expires " + daysDesc,
+						DaysLeft:    daysLeft,
+						ActionURL:   "/plugins/" + name,
+						Timestamp:   now.Format(time.RFC3339),
+					})
+				}
+			}
+		}
+
+		return server.JSON(w, http.StatusOK, alerts)
 	}
 }
 

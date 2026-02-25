@@ -147,6 +147,10 @@ type (
 		Location *LocationSummary `json:"location,omitempty" extensions:"x-nullable,x-omitempty"`
 		Tags     []TagSummary     `json:"tags"`
 
+		// Parent item (for sub-item hierarchy)
+		ParentID   *uuid.UUID `json:"parentId,omitempty"   extensions:"x-nullable,x-omitempty"`
+		ParentName *string    `json:"parentName,omitempty" extensions:"x-nullable,x-omitempty"`
+
 		ImageID     *uuid.UUID `json:"imageId,omitempty"     extensions:"x-nullable,x-omitempty"`
 		ThumbnailId *uuid.UUID `json:"thumbnailId,omitempty" extensions:"x-nullable,x-omitempty"`
 
@@ -199,6 +203,14 @@ func mapItemSummary(item *ent.Item) ItemSummary {
 
 	tags := lo.Ternary(item.Edges.Tag != nil, mapEach(item.Edges.Tag, mapTagSummary), []TagSummary{})
 
+	var parentID *uuid.UUID
+	var parentName *string
+	if item.Edges.Parent != nil {
+		parentID = &item.Edges.Parent.ID
+		name := item.Edges.Parent.Name
+		parentName = &name
+	}
+
 	var imageID *uuid.UUID
 	var thumbnailID *uuid.UUID
 	if item.Edges.Attachments != nil {
@@ -227,6 +239,10 @@ func mapItemSummary(item *ent.Item) ItemSummary {
 		// Edges
 		Location: location,
 		Tags:     tags,
+
+		// Parent
+		ParentID:   parentID,
+		ParentName: parentName,
 
 		// Warranty
 		Insured:     item.Insured,
@@ -492,6 +508,7 @@ func (e *ItemsRepository) QueryByGroup(ctx context.Context, gid uuid.UUID, q Ite
 	qb = qb.
 		WithTag().
 		WithLocation().
+		WithParent().
 		WithAttachments(func(aq *ent.AttachmentQuery) {
 			aq.Where(
 				attachment.Primary(true),
@@ -537,6 +554,7 @@ func (e *ItemsRepository) QueryByAssetID(ctx context.Context, gid uuid.UUID, ass
 		qb.Order(ent.Asc(item.FieldName)).
 			WithTag().
 			WithLocation().
+			WithParent().
 			All(ctx),
 	)
 	if err != nil {

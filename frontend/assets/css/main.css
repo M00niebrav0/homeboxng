@@ -4,36 +4,37 @@
 
 @layer base {
   :root,.homebox {
-    --background: 0 0% 100%;
-    --background-accent: 0 0% 81%;
-    --foreground: 0 0% 20%;
-    --primary: 139 16% 43%;
-    --primary-foreground: 139 100% 89%;
-    --secondary: 77 8% 17%;
-    --secondary-foreground: 76 18% 83%;
-    --accent: 97 37% 93%;
-    --accent-foreground: 97 31% 19%;
-    --muted: 0 0% 90%;
-    --muted-foreground: 0 0% 20%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 20%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 20%;
-    --destructive: 0 91% 71%;
-    --destructive-foreground: 0 100% 14%;
-    --input: 0 0% 81%;
-    --border: 0 0% 81%;
-    --ring: 139 16% 43%;
-    --sidebar-background: 0 0% 90%;
-    --sidebar-foreground: 0 0% 20%;
-    --sidebar-primary: 139 16% 43%;
-    --sidebar-primary-foreground: 139 100% 89%;
-    --sidebar-accent: 0 0% 81%;
-    --sidebar-accent-foreground: 0 0% 20%;
-    --sidebar-border: 0 0% 81%;
-    --sidebar-ring: 0 0% 81%;
+    /* HomeBoxNG default: Purple Midnight — dark theme with indigo/violet accents */
+    --background: 235 40% 11%;
+    --background-accent: 235 40% 8%;
+    --foreground: 210 40% 96%;
+    --primary: 239 84% 67%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 235 40% 16%;
+    --secondary-foreground: 250 20% 85%;
+    --accent: 258 90% 66%;
+    --accent-foreground: 0 0% 100%;
+    --muted: 235 38% 14%;
+    --muted-foreground: 250 15% 65%;
+    --card: 235 40% 13%;
+    --card-foreground: 210 40% 96%;
+    --popover: 235 40% 13%;
+    --popover-foreground: 210 40% 96%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --input: 235 40% 18%;
+    --border: 235 40% 20%;
+    --ring: 239 84% 67%;
+    --sidebar-background: 235 40% 9%;
+    --sidebar-foreground: 210 40% 96%;
+    --sidebar-primary: 239 84% 67%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 235 40% 15%;
+    --sidebar-accent-foreground: 210 40% 96%;
+    --sidebar-border: 235 40% 15%;
+    --sidebar-ring: 235 40% 15%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 }
 
   /*
@@ -954,52 +955,52 @@
 
   /* ==================== HomeBoxNG Custom Themes ==================== */
 
-  /* Midnight - Deep navy/slate dark theme with electric blue accents (iOS dark mode inspired) */
+  /* Midnight - Deep purple/navy dark theme with indigo accents (HomeBoxNG signature theme) */
   .theme-midnight {
-    --background: 222 47% 11%;
-    --background-accent: 222 47% 8%;
+    --background: 235 40% 11%;
+    --background-accent: 235 40% 8%;
     --foreground: 210 40% 96%;
-    --primary: 217 91% 60%;
-    --primary-foreground: 217 100% 97%;
-    --secondary: 222 47% 16%;
-    --secondary-foreground: 215 20% 85%;
-    --accent: 217 91% 60%;
-    --accent-foreground: 217 100% 97%;
-    --muted: 223 47% 14%;
-    --muted-foreground: 215 20% 65%;
-    --card: 222 47% 13%;
+    --primary: 239 84% 67%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 235 40% 16%;
+    --secondary-foreground: 250 20% 85%;
+    --accent: 258 90% 66%;
+    --accent-foreground: 0 0% 100%;
+    --muted: 235 38% 14%;
+    --muted-foreground: 250 15% 65%;
+    --card: 235 40% 13%;
     --card-foreground: 210 40% 96%;
-    --popover: 222 47% 13%;
+    --popover: 235 40% 13%;
     --popover-foreground: 210 40% 96%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --input: 222 47% 18%;
-    --border: 222 47% 18%;
-    --ring: 217 91% 60%;
-    --sidebar-background: 222 47% 9%;
+    --input: 235 40% 18%;
+    --border: 235 40% 20%;
+    --ring: 239 84% 67%;
+    --sidebar-background: 235 40% 9%;
     --sidebar-foreground: 210 40% 96%;
-    --sidebar-primary: 217 91% 60%;
-    --sidebar-primary-foreground: 217 100% 97%;
-    --sidebar-accent: 222 47% 15%;
+    --sidebar-primary: 239 84% 67%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 235 40% 15%;
     --sidebar-accent-foreground: 210 40% 96%;
-    --sidebar-border: 222 47% 15%;
-    --sidebar-ring: 222 47% 15%;
+    --sidebar-border: 235 40% 15%;
+    --sidebar-ring: 235 40% 15%;
 
     --radius: 0.75rem;
   }
 
-  /* Aurora - Pure white light theme with soft lavender accents (iOS settings inspired) */
+  /* Aurora - Light theme with indigo/violet accents (HomeBoxNG light mode) */
   .theme-aurora {
     --background: 0 0% 100%;
-    --background-accent: 250 20% 97%;
+    --background-accent: 240 20% 97%;
     --foreground: 224 71% 4%;
-    --primary: 258 90% 66%;
+    --primary: 239 84% 67%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 250 20% 96%;
+    --secondary: 240 20% 96%;
     --secondary-foreground: 224 71% 4%;
     --accent: 258 90% 66%;
     --accent-foreground: 0 0% 100%;
-    --muted: 250 20% 95%;
+    --muted: 240 20% 95%;
     --muted-foreground: 220 9% 46%;
     --card: 0 0% 100%;
     --card-foreground: 224 71% 4%;
@@ -1007,17 +1008,17 @@
     --popover-foreground: 224 71% 4%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --input: 250 20% 92%;
-    --border: 250 20% 90%;
-    --ring: 258 90% 66%;
-    --sidebar-background: 250 20% 98%;
+    --input: 240 20% 92%;
+    --border: 240 20% 90%;
+    --ring: 239 84% 67%;
+    --sidebar-background: 240 20% 98%;
     --sidebar-foreground: 224 71% 4%;
-    --sidebar-primary: 258 90% 66%;
+    --sidebar-primary: 239 84% 67%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 250 20% 93%;
+    --sidebar-accent: 240 20% 93%;
     --sidebar-accent-foreground: 224 71% 4%;
-    --sidebar-border: 250 20% 90%;
-    --sidebar-ring: 250 20% 90%;
+    --sidebar-border: 240 20% 90%;
+    --sidebar-ring: 240 20% 90%;
 
     --radius: 0.75rem;
   }

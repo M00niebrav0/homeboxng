@@ -24,6 +24,12 @@
     set: (val: string) => emit("update:value", val),
   });
 
+  // Boolean values need special handling to avoid emitting "true"/"false" strings
+  // when the config system expects proper boolean semantics
+  function emitBoolean(val: boolean) {
+    emit("update:value", val ? "true" : "false");
+  }
+
   const showSecret = ref(false);
 
   function toggleSecret() {
@@ -81,11 +87,19 @@
 
     <!-- Boolean toggle -->
     <div v-else-if="field.type === 'boolean'" class="flex items-center gap-2 py-1">
-      <input
-        v-model="booleanValue"
-        type="checkbox"
-        class="toggle toggle-primary toggle-sm"
-      />
+      <button
+        type="button"
+        role="switch"
+        :aria-checked="booleanValue"
+        class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        :class="booleanValue ? 'bg-primary' : 'bg-muted'"
+        @click="emitBoolean(!booleanValue)"
+      >
+        <span
+          class="pointer-events-none block h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform"
+          :class="booleanValue ? 'translate-x-4' : 'translate-x-0'"
+        />
+      </button>
       <span class="text-sm opacity-70">{{ booleanValue ? "Enabled" : "Disabled" }}</span>
     </div>
 

@@ -1,8 +1,11 @@
 <script setup lang="ts">
   import BaseContainer from "@/components/Base/Container.vue";
   import BaseCard from "@/components/Base/Card.vue";
-  import Subtitle from "~/components/global/Subtitle.vue";
+  import { Button } from "@/components/ui/button";
+  import { Input } from "@/components/ui/input";
+  import { Badge } from "@/components/ui/badge";
   import type { CatalogPlugin } from "~/lib/api/classes/plugins";
+  import MdiLoading from "~icons/mdi/loading";
 
   definePageMeta({
     middleware: ["auth"],
@@ -17,20 +20,24 @@
   const installing = ref<string | null>(null);
 
   const { data: catalog, refresh: refreshCatalog } = useAsyncData("plugin-catalog", async () => {
-    const { data } = await api.plugins.getCatalog();
-    return data;
+    try {
+      const { data } = await api.plugins.getCatalog();
+      return data;
+    } catch {
+      return [];
+    }
   });
 
   const categories = computed(() => {
     if (!catalog.value) return [];
-    const cats = new Set(catalog.value.map(p => p.category || "Other"));
+    const cats = new Set((catalog.value as CatalogPlugin[]).map(p => p.category || "Other"));
     return ["all", ...Array.from(cats).sort()];
   });
 
   const filteredPlugins = computed(() => {
     if (!catalog.value) return [];
 
-    return catalog.value.filter(p => {
+    return (catalog.value as CatalogPlugin[]).filter(p => {
       const matchesSearch =
         !searchQuery.value ||
         p.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
@@ -66,38 +73,40 @@
       <div class="flex items-center justify-between">
         <div>
           <h1 class="text-2xl font-bold">Plugin Catalog</h1>
-          <p class="text-sm opacity-70">
+          <p class="text-sm text-muted-foreground">
             Browse and install community plugins from GitHub repositories.
           </p>
         </div>
         <div class="flex gap-2">
-          <NuxtLink to="/plugins" class="btn btn-sm btn-outline">
-            Back to Manager
+          <NuxtLink to="/plugins">
+            <Button variant="outline" size="sm">
+              Back to Manager
+            </Button>
           </NuxtLink>
-          <button class="btn btn-sm btn-primary" @click="doRefreshCatalog">
+          <Button size="sm" @click="doRefreshCatalog">
             Refresh Catalog
-          </button>
+          </Button>
         </div>
       </div>
 
       <!-- Search & Filter -->
-      <div class="flex gap-4 flex-wrap">
-        <input
+      <div class="flex flex-wrap gap-4">
+        <Input
           v-model="searchQuery"
           type="text"
           placeholder="Search plugins..."
-          class="input input-bordered input-sm flex-1 min-w-[200px]"
+          class="min-w-[200px] flex-1"
         />
         <div class="flex gap-1">
-          <button
+          <Button
             v-for="cat in categories"
             :key="cat"
-            class="btn btn-xs"
-            :class="selectedCategory === cat ? 'btn-primary' : 'btn-ghost'"
+            :variant="selectedCategory === cat ? 'default' : 'ghost'"
+            size="sm"
             @click="selectedCategory = cat"
           >
             {{ cat }}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -108,49 +117,51 @@
             <div class="flex items-start justify-between">
               <div>
                 <h3 class="font-semibold">{{ plugin.name }}</h3>
-                <p class="text-xs opacity-60">v{{ plugin.version }} by {{ plugin.author }}</p>
+                <p class="text-xs text-muted-foreground">v{{ plugin.version }} by {{ plugin.author }}</p>
               </div>
-              <span v-if="plugin.category" class="badge badge-xs badge-outline">{{ plugin.category }}</span>
+              <Badge v-if="plugin.category" variant="outline">{{ plugin.category }}</Badge>
             </div>
-            <p class="text-sm mt-2 line-clamp-3">{{ plugin.description }}</p>
+            <p class="mt-2 line-clamp-3 text-sm">{{ plugin.description }}</p>
 
-            <div class="flex items-center justify-between mt-4">
+            <div class="mt-4 flex items-center justify-between">
               <a
                 v-if="plugin.repository"
                 :href="plugin.repository"
                 target="_blank"
                 rel="noopener"
-                class="link link-primary text-xs"
+                class="text-xs text-primary hover:underline"
               >
                 View on GitHub
               </a>
 
-              <button
+              <Button
                 v-if="plugin.installed"
-                class="btn btn-xs btn-success btn-outline"
+                variant="outline"
+                size="sm"
                 disabled
+                class="text-green-500"
               >
                 Installed
-              </button>
-              <button
+              </Button>
+              <Button
                 v-else
-                class="btn btn-xs btn-primary"
-                :class="{ loading: installing === plugin.name }"
+                size="sm"
                 :disabled="installing !== null"
                 @click="installPlugin(plugin)"
               >
+                <MdiLoading v-if="installing === plugin.name" class="mr-1 size-3 animate-spin" />
                 Install
-              </button>
+              </Button>
             </div>
           </div>
         </BaseCard>
       </div>
 
       <!-- Empty State -->
-      <div v-if="filteredPlugins.length === 0" class="text-center py-12 opacity-50">
+      <div v-if="filteredPlugins.length === 0" class="py-12 text-center text-muted-foreground">
         <p class="text-lg">No plugins found</p>
-        <p v-if="searchQuery" class="text-sm mt-2">Try adjusting your search query.</p>
-        <p v-else class="text-sm mt-2">The catalog is empty or hasn't been loaded yet.</p>
+        <p v-if="searchQuery" class="mt-2 text-sm">Try adjusting your search query.</p>
+        <p v-else class="mt-2 text-sm">The catalog is empty or hasn't been loaded yet.</p>
       </div>
     </BaseContainer>
   </div>

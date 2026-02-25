@@ -709,6 +709,9 @@ export interface ItemSummary {
   /** Edges */
   location?: LocationSummary | null;
   name: string;
+  /** Parent item (for sub-item hierarchy) */
+  parentId?: string | null;
+  parentName?: string | null;
   purchasePrice: number;
   quantity: number;
   /** Sale details */

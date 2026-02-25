@@ -186,6 +186,20 @@ export interface WarrantyAlert {
   daysRemaining: number;
 }
 
+// ========== System Alerts Types ==========
+
+export interface SystemAlert {
+  id: string;
+  severity: "critical" | "warning" | "info";
+  category: "token" | "warranty" | "maintenance" | "plugin" | "system";
+  title: string;
+  description: string;
+  itemId?: string;
+  daysLeft?: number;
+  actionUrl?: string;
+  timestamp: string;
+}
+
 // ========== Paperless Types ==========
 
 export interface PaperlessConnection {
@@ -661,6 +675,12 @@ export class PluginsAPI extends BaseAPI {
   getWarrantyAlerts(days?: number) {
     return this.http.get<WarrantyAlert[]>({
       url: route("/plugins/analytics/warranty-alerts", days !== undefined ? { days } : {}),
+    });
+  }
+
+  getSystemAlerts() {
+    return this.http.get<SystemAlert[]>({
+      url: route("/plugins/system-alerts"),
     });
   }
 

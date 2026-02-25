@@ -1,5 +1,5 @@
 import type { GroupStatistics, ItemSummary, MaintenanceEntryWithDetails, TotalsByOrganizer, TreeItem } from "~/lib/api/types/data-contracts";
-import type { PluginInfo, ActivityEntry, WarrantyAlert, ValueByLocation } from "~/lib/api/classes/plugins";
+import type { PluginInfo, ActivityEntry, WarrantyAlert, ValueByLocation, SystemAlert } from "~/lib/api/classes/plugins";
 import type { UserClient } from "~/lib/api/user";
 
 export interface DashboardStats {
@@ -148,6 +148,24 @@ export function useDashboardData(api: UserClient) {
     { lazy: true, server: false }
   );
 
+  // ---- System Alerts ----
+  const {
+    data: systemAlerts,
+    pending: systemAlertsLoading,
+    refresh: refreshSystemAlerts,
+  } = useAsyncData<SystemAlert[]>(
+    "dashboard-system-alerts",
+    async () => {
+      try {
+        const { data } = await api.plugins.getSystemAlerts();
+        return data ?? [];
+      } catch {
+        return [];
+      }
+    },
+    { lazy: true, server: false }
+  );
+
   // ---- Value by Location (via plugins API) ----
   const {
     data: valueByLocation,
@@ -177,6 +195,7 @@ export function useDashboardData(api: UserClient) {
       refreshLocationTree(),
       refreshActivity(),
       refreshWarranty(),
+      refreshSystemAlerts(),
       refreshValueByLocation(),
     ]);
   }
@@ -221,6 +240,11 @@ export function useDashboardData(api: UserClient) {
     warrantyAlerts: computed(() => warrantyAlerts.value ?? []),
     warrantyLoading,
     refreshWarranty,
+
+    // System Alerts
+    systemAlerts: computed(() => systemAlerts.value ?? []),
+    systemAlertsLoading,
+    refreshSystemAlerts,
 
     // Value by Location
     valueByLocation: computed(() => valueByLocation.value ?? []),

@@ -221,6 +221,7 @@ func (a *app) mountRoutes(r *chi.Mux, chain *errchain.ErrChain, repos *repo.AllR
 		r.Post("/plugins/catalog/refresh", chain.ToHandlerFunc(v1Ctrl.HandlePluginsCatalogRefresh(), userMW...))
 		r.Post("/plugins/register", chain.ToHandlerFunc(v1Ctrl.HandlePluginRegisterExternal(), userMW...))
 		r.Get("/plugins/permissions", chain.ToHandlerFunc(v1Ctrl.HandleAllPermissions(), userMW...))
+		r.Get("/plugins/system-alerts", chain.ToHandlerFunc(v1Ctrl.HandleSystemAlerts(), userMW...))
 		r.Get("/plugins/sources", chain.ToHandlerFunc(v1Ctrl.HandlePluginSources(), userMW...))
 		r.Post("/plugins/sources", chain.ToHandlerFunc(v1Ctrl.HandlePluginSourceAdd(), userMW...))
 		r.Delete("/plugins/sources", chain.ToHandlerFunc(v1Ctrl.HandlePluginSourceRemove(), userMW...))

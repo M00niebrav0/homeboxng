@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -177,12 +178,15 @@ func TestWebhookManager_SignPayload(t *testing.T) {
 func TestWebhookManager_Trigger(t *testing.T) {
 	var receivedBody []byte
 	var receivedSignature string
+	done := make(chan struct{})
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		receivedSignature = r.Header.Get("X-Webhook-Signature")
+		sig := r.Header.Get("X-Webhook-Signature")
 		body, _ := io.ReadAll(r.Body)
+		receivedSignature = sig
 		receivedBody = body
 		w.WriteHeader(http.StatusOK)
+		close(done)
 	}))
 	defer server.Close()
 
@@ -199,11 +203,14 @@ func TestWebhookManager_Trigger(t *testing.T) {
 		Active:     true,
 	})
 
-	// Trigger is async, so we need to wait for it to complete.
+	// Trigger is async, so we need to wait for the handler to complete.
 	wm.Trigger("test", "item.created", map[string]string{"name": "Widget"})
 
-	// Give the async delivery some time.
-	time.Sleep(500 * time.Millisecond)
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for webhook delivery")
+	}
 
 	if len(receivedBody) == 0 {
 		t.Fatal("expected webhook body to be received")
@@ -225,9 +232,9 @@ func TestWebhookManager_Trigger(t *testing.T) {
 }
 
 func TestWebhookManager_InactiveWebhook(t *testing.T) {
-	serverCalled := false
+	var serverCalled atomic.Bool
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		serverCalled = true
+		serverCalled.Store(true)
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
@@ -248,15 +255,15 @@ func TestWebhookManager_InactiveWebhook(t *testing.T) {
 	// Give a moment for any errant request.
 	time.Sleep(200 * time.Millisecond)
 
-	if serverCalled {
+	if serverCalled.Load() {
 		t.Error("inactive webhook should not trigger HTTP request")
 	}
 }
 
 func TestWebhookManager_NoMatchingEvent(t *testing.T) {
-	serverCalled := false
+	var serverCalled atomic.Bool
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		serverCalled = true
+		serverCalled.Store(true)
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
@@ -277,7 +284,7 @@ func TestWebhookManager_NoMatchingEvent(t *testing.T) {
 	// Give a moment for any errant request.
 	time.Sleep(200 * time.Millisecond)
 
-	if serverCalled {
+	if serverCalled.Load() {
 		t.Error("server should not be called for non-matching event")
 	}
 }

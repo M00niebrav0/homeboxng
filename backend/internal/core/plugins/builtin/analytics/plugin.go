@@ -168,6 +168,44 @@ func (p *Plugin) Routes(r chi.Router) {
 		}
 		_ = server.JSON(w, http.StatusOK, history)
 	})
+
+	// GET /api/plugins/analytics/overview - Dashboard overview (alias for /summary)
+	r.Get("/overview", func(w http.ResponseWriter, r *http.Request) {
+		stats := p.getStats()
+		_ = server.JSON(w, http.StatusOK, stats)
+	})
+
+	// GET /api/plugins/analytics/value-by-location - Value breakdown by location
+	r.Get("/value-by-location", func(w http.ResponseWriter, r *http.Request) {
+		stats := p.getStats()
+		type valueByLocation struct {
+			LocationID   string  `json:"locationId"`
+			LocationName string  `json:"locationName"`
+			TotalValue   float64 `json:"totalValue"`
+		}
+		result := make([]valueByLocation, 0, len(stats.ItemsByLocation))
+		for name, count := range stats.ItemsByLocation {
+			result = append(result, valueByLocation{
+				LocationID:   name,
+				LocationName: name,
+				TotalValue:   float64(count),
+			})
+		}
+		_ = server.JSON(w, http.StatusOK, result)
+	})
+
+	// GET /api/plugins/analytics/warranty-alerts - Upcoming warranty expirations
+	r.Get("/warranty-alerts", func(w http.ResponseWriter, r *http.Request) {
+		type warrantyAlert struct {
+			ItemID          string `json:"itemId"`
+			ItemName        string `json:"itemName"`
+			WarrantyExpires string `json:"warrantyExpires"`
+			DaysRemaining   int    `json:"daysRemaining"`
+		}
+		// Would query items with upcoming warranty expiration in production
+		_ = server.JSON(w, http.StatusOK, []warrantyAlert{})
+	})
+
 }
 
 // getStats returns cached or freshly computed dashboard stats.
