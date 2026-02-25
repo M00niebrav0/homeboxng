@@ -4,14 +4,17 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/sysadminsmedia/homebox/backend/internal/core/plugins"
 	"github.com/sysadminsmedia/homebox/backend/internal/core/plugins/builtin/aivision"
+	"github.com/sysadminsmedia/homebox/backend/internal/core/plugins/builtin/batteries"
 	"github.com/sysadminsmedia/homebox/backend/internal/core/plugins/builtin/analytics"
 	"github.com/sysadminsmedia/homebox/backend/internal/core/plugins/builtin/excelexport"
 	"github.com/sysadminsmedia/homebox/backend/internal/core/plugins/builtin/eyefi"
 	"github.com/sysadminsmedia/homebox/backend/internal/core/plugins/builtin/example"
 	"github.com/sysadminsmedia/homebox/backend/internal/core/plugins/builtin/habridge"
+	"github.com/sysadminsmedia/homebox/backend/internal/core/plugins/builtin/itasset"
 	"github.com/sysadminsmedia/homebox/backend/internal/core/plugins/builtin/labelprinter"
 	"github.com/sysadminsmedia/homebox/backend/internal/core/plugins/builtin/lending"
 	"github.com/sysadminsmedia/homebox/backend/internal/core/plugins/builtin/maintenance"
+	"github.com/sysadminsmedia/homebox/backend/internal/core/plugins/builtin/manuals"
 	"github.com/sysadminsmedia/homebox/backend/internal/core/plugins/builtin/paperless"
 	"github.com/sysadminsmedia/homebox/backend/internal/core/plugins/builtin/shopping"
 	notifyDiscord "github.com/sysadminsmedia/homebox/backend/internal/core/plugins/builtin/notifications/discord"
@@ -136,6 +139,28 @@ func registerBuiltinPlugins(app *app) {
 	// Shopping Plugin - Shopping list with reorder triggers
 	if err := app.pluginRegistry.Register(shopping.New()); err != nil {
 		log.Error().Err(err).Msg("failed to register shopping plugin")
+	}
+
+	// =========================================================================
+	// Batteries & Storage Plugin - Power tool battery, charger, and modular
+	// storage system tracking (Milwaukee PACKOUT, Ryobi LINK, DeWalt TOUGHSYSTEM, etc.)
+	if err := app.pluginRegistry.Register(batteries.New()); err != nil {
+		log.Error().Err(err).Msg("failed to register batteries plugin")
+	}
+
+	// =========================================================================
+	// IT Asset Plugin - Server, desktop, laptop, and network equipment tracking
+	// with detailed hardware components (CPU, RAM, storage, GPU, NIC, PSU),
+	// remote connection protocols, and VaultWarden credential references.
+	if err := app.pluginRegistry.Register(itasset.New()); err != nil {
+		log.Error().Err(err).Msg("failed to register it-assets plugin")
+	}
+
+	// =========================================================================
+	// Manuals Plugin - Manual lookup, fuzzy matching, ManualsLib search,
+	// and user-uploaded manual management for inventory items.
+	if err := app.pluginRegistry.Register(manuals.New()); err != nil {
+		log.Error().Err(err).Msg("failed to register manuals plugin")
 	}
 
 	// Planned built-in plugins (registered as they are implemented):

@@ -18,6 +18,9 @@
   import MdiClose from "~icons/mdi/close";
   import MdiClock from "~icons/mdi/clock";
   import MdiCheck from "~icons/mdi/check";
+  import MdiServerNetwork from "~icons/mdi/server-network";
+  import MdiBatteryCharging from "~icons/mdi/battery-charging";
+  import MdiBookOpenPageVariant from "~icons/mdi/book-open-page-variant";
 
   import { Input } from "~/components/ui/input";
   import { Button } from "~/components/ui/button";
@@ -100,6 +103,21 @@
       category: "Tools",
       icon: MdiPrinter,
       description: "Print labels and QR codes for your inventory items",
+    },
+    "it-assets": {
+      category: "IT & Homelab",
+      icon: MdiServerNetwork,
+      description: "Track servers, desktops, laptops, and network equipment with hardware details",
+    },
+    batteries: {
+      category: "Tools",
+      icon: MdiBatteryCharging,
+      description: "Power tool battery, charger, and modular storage system tracking",
+    },
+    manuals: {
+      category: "Inventory & Data",
+      icon: MdiBookOpenPageVariant,
+      description: "Find, link, and manage product manuals from ManualsLib and other sources",
     },
   };
 
