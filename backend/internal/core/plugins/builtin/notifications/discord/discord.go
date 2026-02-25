@@ -154,7 +154,7 @@ func (p *Plugin) TestNotification(ctx context.Context) error {
 
 func (p *Plugin) ConfigSchema() []plugins.ConfigField {
 	return []plugins.ConfigField{
-		{Key: "webhook_url", Label: "Webhook URL", Description: "Discord webhook URL (Server Settings > Integrations > Webhooks)", Type: "secret", Required: true},
+		{Key: "webhook_url", Label: "Webhook URL", Description: "Discord webhook URL (Server Settings > Integrations > Webhooks)", Type: "secret", EnvVar: "HBOX_DISCORD_WEBHOOK_URL", Required: true},
 		{Key: "username", Label: "Bot Username", Description: "Display name for the webhook messages", Type: "string", Default: "HomeBoxNG", Required: false},
 		{Key: "avatar_url", Label: "Avatar URL", Description: "URL to an image for the webhook avatar", Type: "string", Required: false},
 	}

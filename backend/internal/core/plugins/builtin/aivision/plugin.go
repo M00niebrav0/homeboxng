@@ -167,11 +167,11 @@ func (p *Plugin) SubscribeEvents(bus *eventbus.EventBus) {
 // ConfigSchema returns the AI vision configuration options.
 func (p *Plugin) ConfigSchema() []plugins.ConfigField {
 	return []plugins.ConfigField{
-		{Key: "ollama_url", Label: "Ollama Vision URL", Description: "URL of Ollama instance with vision model (e.g., http://192.168.1.193:11434)", Type: "string", Default: "http://192.168.1.193:11434", Required: true},
-		{Key: "ollama_model", Label: "Vision Model", Description: "Ollama model for photo identification (e.g., qwen3-vl:8b)", Type: "string", Default: "qwen3-vl:8b", Required: true},
-		{Key: "litellm_url", Label: "LiteLLM URL", Description: "LiteLLM proxy URL for text verification (e.g., http://192.168.1.249:4000)", Type: "string", Default: "http://192.168.1.249:4000", Required: true},
+		{Key: "ollama_url", Label: "Ollama Vision URL", Description: "URL of Ollama instance with vision model (e.g., http://192.168.1.193:11434)", Type: "string", Default: "http://192.168.1.193:11434", EnvVar: "HBOX_OLLAMA_URL", Required: true},
+		{Key: "ollama_model", Label: "Vision Model", Description: "Ollama model for photo identification (e.g., qwen3-vl:8b)", Type: "string", Default: "qwen3-vl:8b", EnvVar: "HBOX_VISION_MODEL", Required: true},
+		{Key: "litellm_url", Label: "LiteLLM URL", Description: "LiteLLM proxy URL for text verification (e.g., http://192.168.1.249:4000)", Type: "string", Default: "http://192.168.1.249:4000", EnvVar: "HBOX_LITELLM_URL", Required: true},
 		{Key: "litellm_key", Label: "LiteLLM API Key", Description: "API key for LiteLLM proxy", Type: "secret", Required: false},
-		{Key: "litellm_model", Label: "Verification Model", Description: "Text model for step 2 verification (e.g., gemini-flash)", Type: "string", Default: "gemini-flash", Required: true},
+		{Key: "litellm_model", Label: "Verification Model", Description: "Text model for step 2 verification (e.g., gemini-flash)", Type: "string", Default: "gemini-flash", EnvVar: "HBOX_VERIFICATION_MODEL", Required: true},
 		{Key: "auto_confidence", Label: "Auto-Add Confidence", Description: "Items above this confidence % are auto-added without asking (0-100)", Type: "number", Default: "80", Required: false},
 	}
 }

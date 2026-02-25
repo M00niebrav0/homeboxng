@@ -128,6 +128,11 @@ type ConfigField struct {
 	// Default is the default value if not configured.
 	Default string `json:"default"`
 
+	// EnvVar is an optional environment variable name (e.g., "HBOX_PAPERLESS_TOKEN").
+	// When set, the plugin will fall back to this env var if no user-configured value exists.
+	// Priority order: user-configured value > environment variable > Default.
+	EnvVar string `json:"envVar,omitempty"`
+
 	// Options lists valid values for "select" type fields.
 	Options []string `json:"options,omitempty"`
 

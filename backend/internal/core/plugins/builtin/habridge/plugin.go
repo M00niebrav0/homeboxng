@@ -267,12 +267,12 @@ func (p *Plugin) SubscribeEvents(bus *eventbus.EventBus) {
 func (p *Plugin) ConfigSchema() []plugins.ConfigField {
 	return []plugins.ConfigField{
 		{Key: "enabled", Label: "Enable HA Bridge", Description: "Enable Home Assistant MQTT bridge", Type: "boolean", Default: "false", Required: false},
-		{Key: "mqtt_broker", Label: "MQTT Broker", Description: "MQTT broker hostname or IP", Type: "string", Default: "192.168.1.249", Required: true},
-		{Key: "mqtt_port", Label: "MQTT Port", Description: "MQTT broker port", Type: "number", Default: "1883", Required: false},
-		{Key: "mqtt_username", Label: "MQTT Username", Description: "MQTT authentication username", Type: "string", Required: false},
-		{Key: "mqtt_password", Label: "MQTT Password", Description: "MQTT authentication password", Type: "secret", Required: false},
-		{Key: "ha_url", Label: "HA URL", Description: "Home Assistant URL (for REST API calls)", Type: "string", Required: false},
-		{Key: "ha_token", Label: "HA Token", Description: "Long-lived access token for HA REST API", Type: "secret", Required: false},
+		{Key: "mqtt_broker", Label: "MQTT Broker", Description: "MQTT broker hostname or IP", Type: "string", Default: "192.168.1.249", EnvVar: "HBOX_MQTT_BROKER", Required: true},
+		{Key: "mqtt_port", Label: "MQTT Port", Description: "MQTT broker port", Type: "number", Default: "1883", EnvVar: "HBOX_MQTT_PORT", Required: false},
+		{Key: "mqtt_username", Label: "MQTT Username", Description: "MQTT authentication username", Type: "string", EnvVar: "HBOX_MQTT_USERNAME", Required: false},
+		{Key: "mqtt_password", Label: "MQTT Password", Description: "MQTT authentication password", Type: "secret", EnvVar: "HBOX_MQTT_PASSWORD", Required: false},
+		{Key: "ha_url", Label: "HA URL", Description: "Home Assistant URL (for REST API calls)", Type: "string", EnvVar: "HBOX_HA_URL", Required: false},
+		{Key: "ha_token", Label: "HA Token", Description: "Long-lived access token for HA REST API", Type: "secret", EnvVar: "HBOX_HA_TOKEN", Required: false},
 	}
 }
 

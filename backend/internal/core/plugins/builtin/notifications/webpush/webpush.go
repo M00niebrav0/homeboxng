@@ -264,6 +264,8 @@ func (p *Plugin) TestNotification(ctx context.Context) error {
 func (p *Plugin) ConfigSchema() []plugins.ConfigField {
 	return []plugins.ConfigField{
 		{Key: "vapid_subject", Label: "VAPID Subject", Description: "Contact email for push service (mailto:you@example.com)", Type: "string", Default: "mailto:admin@homeboxng.local", Required: true},
+		{Key: "vapid_public", Label: "VAPID Public Key", Description: "Base64url-encoded VAPID public key (auto-generated if empty)", Type: "string", EnvVar: "HBOX_VAPID_PUBLIC_KEY", Required: false},
+		{Key: "vapid_private", Label: "VAPID Private Key", Description: "Base64url-encoded VAPID private key (auto-generated if empty)", Type: "secret", EnvVar: "HBOX_VAPID_PRIVATE_KEY", Required: false},
 	}
 }
 

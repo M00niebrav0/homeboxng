@@ -147,8 +147,8 @@ func (p *Plugin) TestNotification(ctx context.Context) error {
 
 func (p *Plugin) ConfigSchema() []plugins.ConfigField {
 	return []plugins.ConfigField{
-		{Key: "server_url", Label: "Gotify Server URL", Description: "URL of your Gotify server (e.g., https://gotify.example.com)", Type: "string", Required: true},
-		{Key: "app_token", Label: "Application Token", Description: "Gotify application token (create in Gotify web UI > Apps)", Type: "secret", Required: true},
+		{Key: "server_url", Label: "Gotify Server URL", Description: "URL of your Gotify server (e.g., https://gotify.example.com)", Type: "string", EnvVar: "HBOX_GOTIFY_URL", Required: true},
+		{Key: "app_token", Label: "Application Token", Description: "Gotify application token (create in Gotify web UI > Apps)", Type: "secret", EnvVar: "HBOX_GOTIFY_TOKEN", Required: true},
 		{Key: "default_priority", Label: "Default Priority", Description: "Default message priority (1-10, higher = more urgent)", Type: "number", Default: "5", Required: false},
 	}
 }

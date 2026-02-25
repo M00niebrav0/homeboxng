@@ -277,7 +277,7 @@ func (p *Plugin) SubscribeEvents(bus *eventbus.EventBus) {
 // ConfigSchema returns export configuration options.
 func (p *Plugin) ConfigSchema() []plugins.ConfigField {
 	return []plugins.ConfigField{
-		{Key: "public_url", Label: "Public URL", Description: "URL for item hyperlinks in exports", Type: "string", Default: "http://192.168.1.249:7745", Required: false},
+		{Key: "public_url", Label: "Public URL", Description: "URL for item hyperlinks in exports", Type: "string", Default: "http://192.168.1.249:7745", EnvVar: "HBOX_PUBLIC_URL", Required: false},
 	}
 }
 

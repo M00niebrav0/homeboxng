@@ -376,9 +376,9 @@ func (p *Plugin) SubscribeEvents(bus *eventbus.EventBus) {
 func (p *Plugin) ConfigSchema() []plugins.ConfigField {
 	return []plugins.ConfigField{
 		{Key: "soap_port", Label: "SOAP Port", Description: "Eye-Fi SOAP protocol port (default: 59278)", Type: "number", Default: "59278", Required: false},
-		{Key: "upload_key", Label: "Upload Key", Description: "32-char hex upload key from Eye-Fi Settings.xml", Type: "secret", Required: true},
-		{Key: "card_mac", Label: "Card MAC", Description: "Eye-Fi card MAC address (e.g., 00:1A:7D:DA:71:XX)", Type: "string", Required: false},
-		{Key: "upload_dir", Label: "Upload Directory", Description: "Directory where uploaded photos are stored", Type: "string", Default: "/tmp/homeboxng-eyefi", Required: true},
+		{Key: "upload_key", Label: "Upload Key", Description: "32-char hex upload key from Eye-Fi Settings.xml", Type: "secret", EnvVar: "HBOX_EYEFI_UPLOAD_KEY", Required: true},
+		{Key: "card_mac", Label: "Card MAC", Description: "Eye-Fi card MAC address (e.g., 00:1A:7D:DA:71:XX)", Type: "string", EnvVar: "HBOX_EYEFI_CARD_MAC", Required: false},
+		{Key: "upload_dir", Label: "Upload Directory", Description: "Directory where uploaded photos are stored", Type: "string", Default: "/tmp/homeboxng-eyefi", EnvVar: "HBOX_EYEFI_UPLOAD_DIR", Required: true},
 		{Key: "import_mode", Label: "Import Mode", Description: "How photos are processed: auto (immediate), manual (on demand), off (store only)", Type: "select", Default: "manual", Options: []string{"auto", "manual", "off"}, Required: false},
 		{Key: "poll_interval", Label: "Poll Interval (seconds)", Description: "How often to check for new files", Type: "number", Default: "10", Required: false},
 	}

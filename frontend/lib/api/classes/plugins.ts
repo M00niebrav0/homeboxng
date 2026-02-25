@@ -21,6 +21,7 @@ export interface PluginConfig {
   options?: string[];
   required: boolean;
   value?: string;
+  envVar?: string;
 }
 
 export interface PluginPermission {

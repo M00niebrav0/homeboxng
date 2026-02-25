@@ -15,5 +15,61 @@ services:
     environment:
       - HBOX_DEBUG=true
       - HBOX_LOGGER_LEVEL=-1
+      ## ─── Plugin Environment Variables ───────────────────────────────────
+      ## Plugins auto-detect these env vars at startup. Set any of them to
+      ## configure the corresponding plugin without using the web UI.
+      ## Priority: user-configured (web UI/API) > env var > built-in default.
+      ##
+      ## ── AI Vision ──
+      # - HBOX_OLLAMA_URL=http://192.168.1.193:11434
+      # - HBOX_VISION_MODEL=qwen3-vl:8b
+      # - HBOX_LITELLM_URL=http://192.168.1.249:4000
+      # - HBOX_VERIFICATION_MODEL=gemini-flash
+      ##
+      ## ── Paperless-ngx Bridge ──
+      # - HBOX_PAPERLESS_URL=http://192.168.1.249:8000
+      # - HBOX_PAPERLESS_TOKEN=
+      ##
+      ## ── Home Assistant Bridge ──
+      # - HBOX_MQTT_BROKER=192.168.1.249
+      # - HBOX_MQTT_PORT=1883
+      # - HBOX_MQTT_USERNAME=
+      # - HBOX_MQTT_PASSWORD=
+      # - HBOX_HA_URL=http://homeassistant.local:8123
+      # - HBOX_HA_TOKEN=
+      ##
+      ## ── Label Printer ──
+      # - HBOX_PRINTER_IP=192.168.1.243
+      # - HBOX_PRINTER_PORT=9100
+      ##
+      ## ── Excel Export ──
+      # - HBOX_PUBLIC_URL=http://192.168.1.249:7745
+      ##
+      ## ── Eye-Fi ──
+      # - HBOX_EYEFI_UPLOAD_KEY=
+      # - HBOX_EYEFI_CARD_MAC=
+      # - HBOX_EYEFI_UPLOAD_DIR=/tmp/homeboxng-eyefi
+      ##
+      ## ── Notifications: Discord ──
+      # - HBOX_DISCORD_WEBHOOK_URL=
+      ##
+      ## ── Notifications: Email (SMTP) ──
+      # - HBOX_SMTP_HOST=smtp.gmail.com
+      # - HBOX_SMTP_PORT=587
+      # - HBOX_SMTP_USERNAME=
+      # - HBOX_SMTP_PASSWORD=
+      ##
+      ## ── Notifications: Gotify ──
+      # - HBOX_GOTIFY_URL=https://gotify.example.com
+      # - HBOX_GOTIFY_TOKEN=
+      ##
+      ## ── Notifications: ntfy ──
+      # - HBOX_NTFY_URL=https://ntfy.sh
+      # - HBOX_NTFY_TOPIC=homeboxng
+      ##
+      ## ── Notifications: Web Push ──
+      # - HBOX_VAPID_PUBLIC_KEY=
+      # - HBOX_VAPID_PRIVATE_KEY=
+      ## ───────────────────────────────────────────────────────────────────
     ports:
       - 3100:7745

@@ -8,6 +8,7 @@
     options?: string[];
     required: boolean;
     value: string;
+    envVar?: string;
   }
 
   const props = defineProps<{
@@ -153,8 +154,15 @@
     />
 
     <!-- Description helper text -->
-    <label v-if="field.description" class="label">
+    <label v-if="field.description" class="label pb-0">
       <span class="label-text-alt opacity-60">{{ field.description }}</span>
+    </label>
+
+    <!-- Environment variable hint -->
+    <label v-if="field.envVar" class="label pt-0">
+      <span class="label-text-alt opacity-40 font-mono text-[11px]">
+        or set <code class="bg-base-200 px-1 py-0.5 rounded text-[10px]">{{ field.envVar }}</code>
+      </span>
     </label>
   </div>
 </template>

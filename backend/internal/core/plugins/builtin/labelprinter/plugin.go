@@ -287,8 +287,8 @@ func (p *Plugin) SubscribeEvents(bus *eventbus.EventBus) {
 // ConfigSchema returns label printer configuration options.
 func (p *Plugin) ConfigSchema() []plugins.ConfigField {
 	return []plugins.ConfigField{
-		{Key: "printer_ip", Label: "Printer IP", Description: "Brother QL printer IP address", Type: "string", Default: "192.168.1.243", Required: true},
-		{Key: "printer_port", Label: "Printer Port", Description: "Printer TCP port (default: 9100)", Type: "number", Default: "9100", Required: false},
+		{Key: "printer_ip", Label: "Printer IP", Description: "Brother QL printer IP address", Type: "string", Default: "192.168.1.243", EnvVar: "HBOX_PRINTER_IP", Required: true},
+		{Key: "printer_port", Label: "Printer Port", Description: "Printer TCP port (default: 9100)", Type: "number", Default: "9100", EnvVar: "HBOX_PRINTER_PORT", Required: false},
 		{Key: "printer_model", Label: "Printer Model", Description: "Brother QL model (e.g., QL-710W, QL-820NWB)", Type: "string", Default: "QL-710W", Required: false},
 		{Key: "public_url", Label: "Public URL", Description: "URL for QR codes (e.g., https://homebox-ai.nocommscompany.com)", Type: "string", Default: "http://192.168.1.249:7745", Required: true},
 		{Key: "default_orientation", Label: "Default Orientation", Description: "Default label orientation", Type: "select", Default: "portrait", Options: []string{"portrait", "landscape"}, Required: false},

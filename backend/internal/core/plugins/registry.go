@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -126,6 +127,8 @@ func (r *Registry) MountRoutes(router chi.Router) {
 }
 
 // StartAll starts all registered plugins.
+// Before starting each plugin, it resolves environment variable fallbacks
+// for any ConfigPlugin fields that have EnvVar set.
 func (r *Registry) StartAll(ctx context.Context) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -135,6 +138,12 @@ func (r *Registry) StartAll(ctx context.Context) error {
 		if entry.State == StateError {
 			r.logger.Warn().Str("plugin", name).Str("error", entry.Error).Msg("skipping errored plugin")
 			continue
+		}
+
+		// Resolve environment variable fallbacks for ConfigPlugin implementations.
+		// Priority: user-configured value > environment variable > default.
+		if cp, ok := entry.Plugin.(ConfigPlugin); ok {
+			r.applyEnvVarDefaults(name, cp)
 		}
 
 		if err := entry.Plugin.Start(ctx); err != nil {
@@ -148,6 +157,47 @@ func (r *Registry) StartAll(ctx context.Context) error {
 		r.logger.Info().Str("plugin", name).Msg("plugin started")
 	}
 	return nil
+}
+
+// applyEnvVarDefaults checks each ConfigField for an EnvVar declaration.
+// If the env var is set, it builds a config map and calls Configure() so the
+// plugin picks up the value. The plugin's Configure method already handles
+// the "skip if empty" logic, so only non-empty env var values are applied.
+func (r *Registry) applyEnvVarDefaults(name string, cp ConfigPlugin) {
+	schema := cp.ConfigSchema()
+	envValues := make(map[string]string)
+	applied := 0
+
+	for _, field := range schema {
+		if field.EnvVar == "" {
+			continue
+		}
+
+		val := os.Getenv(field.EnvVar)
+		if val != "" {
+			envValues[field.Key] = val
+			applied++
+			r.logger.Debug().
+				Str("plugin", name).
+				Str("field", field.Key).
+				Str("envVar", field.EnvVar).
+				Msg("applying env var config")
+		}
+	}
+
+	if applied > 0 {
+		if err := cp.Configure(envValues); err != nil {
+			r.logger.Warn().Err(err).
+				Str("plugin", name).
+				Int("fields", applied).
+				Msg("failed to apply env var configuration")
+		} else {
+			r.logger.Info().
+				Str("plugin", name).
+				Int("fields", applied).
+				Msg("applied env var configuration")
+		}
+	}
 }
 
 // StopAll stops all started plugins in reverse registration order.

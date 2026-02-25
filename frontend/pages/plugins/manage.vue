@@ -59,6 +59,9 @@
   import MdiFilter from "~icons/mdi/filter";
   import MdiLink from "~icons/mdi/link";
   import MdiChevronRight from "~icons/mdi/chevron-right";
+  import MdiConsole from "~icons/mdi/console";
+  import ConfigFieldRenderer from "~/components/Plugin/ConfigFieldRenderer.vue";
+  import type { PluginConfig } from "~/lib/api/classes/plugins";
 
   definePageMeta({
     middleware: ["auth"],
@@ -102,6 +105,81 @@
     await refreshPlugins();
     refreshLoading.value = false;
     toast.success("Plugin list refreshed.");
+  }
+
+  // ==================== Env Var Detection & Config Modal ====================
+  const pluginEnvVars = ref<Record<string, string[]>>({});
+  const showConfigModal = ref(false);
+  const configPlugin = ref<FlatPlugin | null>(null);
+  const configFields = ref<PluginConfig[]>([]);
+  const configLoading = ref(false);
+  const configSaving = ref(false);
+
+  // Load env var info for all plugins on mount
+  onMounted(async () => {
+    if (plugins.value) {
+      await loadEnvVarInfo(plugins.value);
+    }
+  });
+
+  watch(plugins, async (val) => {
+    if (val) await loadEnvVarInfo(val);
+  });
+
+  async function loadEnvVarInfo(pluginList: FlatPlugin[]) {
+    for (const plugin of pluginList) {
+      try {
+        const { data } = await api.plugins.getConfig(plugin.name);
+        if (data) {
+          const envVars = data.filter(f => f.envVar).map(f => f.envVar!);
+          if (envVars.length > 0) {
+            pluginEnvVars.value[plugin.name] = envVars;
+          }
+        }
+      } catch {
+        // Skip plugins that don't support config
+      }
+    }
+  }
+
+  function hasEnvVars(pluginName: string): boolean {
+    return (pluginEnvVars.value[pluginName]?.length ?? 0) > 0;
+  }
+
+  async function openConfig(plugin: FlatPlugin) {
+    configPlugin.value = plugin;
+    configLoading.value = true;
+    showConfigModal.value = true;
+    configFields.value = [];
+
+    try {
+      const { data } = await api.plugins.getConfig(plugin.name);
+      configFields.value = data || [];
+    } catch {
+      configFields.value = [];
+    }
+    configLoading.value = false;
+  }
+
+  function updateConfigFieldValue(index: number, newValue: string) {
+    configFields.value[index] = { ...configFields.value[index], value: newValue };
+  }
+
+  async function saveConfigModal() {
+    if (!configPlugin.value) return;
+    configSaving.value = true;
+    try {
+      const payload: Record<string, string> = {};
+      for (const field of configFields.value) {
+        payload[field.key] = field.value ?? field.default ?? "";
+      }
+      await api.plugins.saveConfig(configPlugin.value.name, payload);
+      toast.success(`Configuration saved for "${configPlugin.value.name}".`);
+      showConfigModal.value = false;
+    } catch {
+      toast.error("Failed to save configuration.");
+    }
+    configSaving.value = false;
   }
 
   function statusDotClass(plugin: FlatPlugin): string {
@@ -525,6 +603,47 @@
       </DialogContent>
     </Dialog>
 
+    <!-- Quick Config Modal -->
+    <Dialog v-model:open="showConfigModal">
+      <DialogContent class="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle class="flex items-center gap-2">
+            <MdiCog class="h-5 w-5" />
+            {{ configPlugin?.name }} - Configuration
+          </DialogTitle>
+          <DialogDescription>
+            Configure plugin settings. Fields with environment variable support show
+            the variable name below each input.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div v-if="configLoading" class="flex items-center justify-center py-12">
+          <MdiLoading class="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+
+        <div v-else class="max-h-96 space-y-1 overflow-y-auto">
+          <div v-if="configFields.length === 0" class="py-8 text-center text-sm text-muted-foreground">
+            This plugin has no configurable settings.
+          </div>
+
+          <ConfigFieldRenderer
+            v-for="(field, idx) in configFields"
+            :key="field.key"
+            :field="{ ...field, value: field.value ?? field.default ?? '' }"
+            @update:value="updateConfigFieldValue(idx, $event)"
+          />
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" @click="showConfigModal = false">Cancel</Button>
+          <Button :disabled="configSaving" @click="saveConfigModal">
+            <MdiLoading v-if="configSaving" class="mr-1 h-4 w-4 animate-spin" />
+            Save
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
     <!-- Remove Source Confirmation -->
     <AlertDialog v-model:open="showRemoveSourceDialog">
       <AlertDialogContent>
@@ -651,6 +770,12 @@
                   v{{ plugin.version }} by {{ plugin.author }}
                 </p>
                 <p class="mt-2 line-clamp-2 text-sm">{{ plugin.description }}</p>
+                <div v-if="hasEnvVars(plugin.name)" class="mt-1.5">
+                  <Badge variant="outline" class="text-[10px] gap-1">
+                    <MdiConsole class="h-2.5 w-2.5" />
+                    Env vars available
+                  </Badge>
+                </div>
               </div>
               <div class="flex flex-col items-end gap-1">
                 <Badge :variant="statusBadgeVariant(plugin)" class="text-[10px]">
@@ -672,6 +797,10 @@
                   Configure
                 </Button>
               </NuxtLink>
+              <Button variant="ghost" size="sm" class="h-7 text-xs" @click="openConfig(plugin)">
+                <MdiConsole class="mr-1 h-3 w-3" />
+                Quick Config
+              </Button>
               <Button variant="ghost" size="sm" class="h-7 text-xs" @click="openPermissions(plugin)">
                 <MdiShieldCheck class="mr-1 h-3 w-3" />
                 Permissions

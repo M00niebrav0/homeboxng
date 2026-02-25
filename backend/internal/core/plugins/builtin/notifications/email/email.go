@@ -124,10 +124,10 @@ func (p *Plugin) TestNotification(ctx context.Context) error {
 
 func (p *Plugin) ConfigSchema() []plugins.ConfigField {
 	return []plugins.ConfigField{
-		{Key: "smtp_host", Label: "SMTP Server", Description: "SMTP server hostname (e.g., smtp.gmail.com)", Type: "string", Required: true},
-		{Key: "smtp_port", Label: "SMTP Port", Description: "SMTP server port (587 for TLS, 465 for SSL)", Type: "string", Default: "587", Required: true},
-		{Key: "username", Label: "Username", Description: "SMTP authentication username (usually your email)", Type: "string", Required: true},
-		{Key: "password", Label: "Password", Description: "SMTP authentication password or app password", Type: "secret", Required: true},
+		{Key: "smtp_host", Label: "SMTP Server", Description: "SMTP server hostname (e.g., smtp.gmail.com)", Type: "string", EnvVar: "HBOX_SMTP_HOST", Required: true},
+		{Key: "smtp_port", Label: "SMTP Port", Description: "SMTP server port (587 for TLS, 465 for SSL)", Type: "string", Default: "587", EnvVar: "HBOX_SMTP_PORT", Required: true},
+		{Key: "username", Label: "Username", Description: "SMTP authentication username (usually your email)", Type: "string", EnvVar: "HBOX_SMTP_USERNAME", Required: true},
+		{Key: "password", Label: "Password", Description: "SMTP authentication password or app password", Type: "secret", EnvVar: "HBOX_SMTP_PASSWORD", Required: true},
 		{Key: "from_address", Label: "From Address", Description: "Sender email address", Type: "string", Required: true},
 		{Key: "to_addresses", Label: "Recipients", Description: "Comma-separated recipient email addresses", Type: "string", Required: true},
 	}

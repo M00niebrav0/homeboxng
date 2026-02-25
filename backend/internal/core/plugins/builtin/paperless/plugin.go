@@ -338,8 +338,8 @@ func (p *Plugin) SubscribeEvents(bus *eventbus.EventBus) {
 // ConfigSchema returns Paperless bridge configuration options.
 func (p *Plugin) ConfigSchema() []plugins.ConfigField {
 	return []plugins.ConfigField{
-		{Key: "paperless_url", Label: "Paperless-ngx URL", Description: "URL of your Paperless-ngx instance", Type: "string", Default: "http://192.168.1.249:8000", Required: true},
-		{Key: "paperless_token", Label: "API Token", Description: "Paperless-ngx API authentication token", Type: "secret", Required: true},
+		{Key: "paperless_url", Label: "Paperless-ngx URL", Description: "URL of your Paperless-ngx instance", Type: "string", Default: "http://192.168.1.249:8000", EnvVar: "HBOX_PAPERLESS_URL", Required: true},
+		{Key: "paperless_token", Label: "API Token", Description: "Paperless-ngx API authentication token", Type: "secret", EnvVar: "HBOX_PAPERLESS_TOKEN", Required: true},
 		{Key: "auto_link", Label: "Auto-Link", Description: "Automatically link new receipts/invoices to matching items", Type: "boolean", Default: "false", Required: false},
 	}
 }

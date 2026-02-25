@@ -145,8 +145,8 @@ func (p *Plugin) TestNotification(ctx context.Context) error {
 
 func (p *Plugin) ConfigSchema() []plugins.ConfigField {
 	return []plugins.ConfigField{
-		{Key: "server_url", Label: "ntfy Server URL", Description: "ntfy server URL (default: https://ntfy.sh for the public server)", Type: "string", Default: "https://ntfy.sh", Required: true},
-		{Key: "topic", Label: "Topic", Description: "Notification topic name (choose something unique like homeboxng-yourname)", Type: "string", Default: "homeboxng", Required: true},
+		{Key: "server_url", Label: "ntfy Server URL", Description: "ntfy server URL (default: https://ntfy.sh for the public server)", Type: "string", Default: "https://ntfy.sh", EnvVar: "HBOX_NTFY_URL", Required: true},
+		{Key: "topic", Label: "Topic", Description: "Notification topic name (choose something unique like homeboxng-yourname)", Type: "string", Default: "homeboxng", EnvVar: "HBOX_NTFY_TOPIC", Required: true},
 		{Key: "access_token", Label: "Access Token", Description: "Optional access token for private topics (leave empty for public topics)", Type: "secret", Required: false},
 	}
 }
