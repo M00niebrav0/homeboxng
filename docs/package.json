@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@aria-ui/core": "^0.0.22",
-    "@astrojs/cloudflare": "^12.6.12",
+    "@astrojs/cloudflare": "^13.1.10",
     "@astrojs/starlight": "^0.36.3",
     "@astrojs/starlight-tailwind": "^4.0.2",
     "@fontsource-variable/atkinson-hyperlegible-mono": "^5.2.5",
